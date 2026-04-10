@@ -1,0 +1,78 @@
+project:
+  name: qupled
+
+profiles:
+  default:
+    build:
+      native:
+        env:
+          OpenMP_ROOT: /opt/homebrew/opt/libomp
+    test:
+      runners:
+        native-cpp:
+          env:
+            OpenMP_ROOT: /opt/homebrew/opt/libomp
+  mpi:
+    build:
+      native:
+        configure_args:
+          - -DUSE_MPI=ON
+      python:
+        env:
+          USE_MPI: "ON"
+    test:
+      runners:
+        native-cpp:
+          configure_args:
+            - -DUSE_MPI=ON
+
+build:
+  native:
+    backend: cmake
+    source_dir: src/qupled/native/src
+    build_dir: dist-native
+    configure_args:
+      - -DBUILD_NATIVE_TESTS=OFF
+      - -DUSE_MPI=OFF
+  python:
+    backend: python-build
+    command: ["python3", "-m", "build"]
+    env:
+      BUILD_NATIVE_TESTS: "OFF"
+      USE_MPI: "OFF"
+
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+      marker: unit
+      args: ["-v"]
+    integration:
+      backend: tox
+      tox_env: integration
+    native-cpp:
+      backend: ctest
+      source_dir: src/qupled/native/src
+      build_dir: dist-native-tests
+      target: native_tests
+      configure_args:
+        - -DBUILD_NATIVE_TESTS=ON
+        - -DUSE_MPI=OFF
+
+deploy:
+  targets:
+    pypi:
+      backend: twine
+      artifacts:
+        - dist/*
+      repository: pypi
+
+clean:
+  paths:
+    - dist
+    - dist-native
+    - dist-native-tests
+    - src/qupled.egg-info
+    - docs/_build
+    - docs/_generated

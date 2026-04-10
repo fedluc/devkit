@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "devkit"
+version = "0.1.0"
+description = "Unified developer CLI for Python packages with C and C++ bindings."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Federico Lucco Castello" }
+]
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+devkit = "devkit.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/devkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

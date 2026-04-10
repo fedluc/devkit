@@ -1,0 +1,56 @@
+from pathlib import Path
+
+from devkit import cli
+
+
+def write_config(path: Path) -> Path:
+    config = path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+deploy:
+  targets:
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+clean:
+  paths: ["dist"]
+""",
+        encoding="utf-8",
+    )
+    return config
+
+
+def test_validate_command_succeeds(tmp_path: Path, capsys) -> None:
+    config = write_config(tmp_path)
+
+    exit_code = cli.main(["--config", str(config), "validate"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Configuration valid" in captured.out
+
+
+def test_build_dry_run_routes_to_executor(tmp_path: Path, monkeypatch) -> None:
+    config = write_config(tmp_path)
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["count"] = len(specs)
+        captured["dry_run"] = dry_run
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "build", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured == {"count": 1, "dry_run": True}
