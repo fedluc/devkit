@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
+from devkit import config as cfg
 from devkit.adapters.build import build_specs
 from devkit.adapters.deploy import deploy_specs
 from devkit.adapters.testing import runner_specs
-from devkit import config as cfg
 from devkit.errors import ConfigError
 
 
@@ -104,7 +104,13 @@ def test_deploy_specs_resolve_matching_artifacts(tmp_path: Path) -> None:
 
     specs = deploy_specs(tmp_path, target)
 
-    assert specs[0].command == ["twine", "upload", "--repository", "testpypi", str(wheel)]
+    assert specs[0].command == [
+        "twine",
+        "upload",
+        "--repository",
+        "testpypi",
+        str(wheel),
+    ]
 
 
 def test_deploy_specs_fail_when_no_artifacts_found(tmp_path: Path) -> None:

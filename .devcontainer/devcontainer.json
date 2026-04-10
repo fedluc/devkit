@@ -11,6 +11,10 @@
     }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "runArgs": [
+    "--security-opt=seccomp=unconfined",
+    "--security-opt=apparmor=unconfined"
+  ],
   "mounts": [
     "type=bind,source=${localEnv:HOME}/.codex,target=/home/vscode/.codex"
   ],
@@ -20,6 +24,7 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-vscode.cmake-tools",
+        "charliermarsh.ruff",
         "openai.chatgpt"
       ]
     }

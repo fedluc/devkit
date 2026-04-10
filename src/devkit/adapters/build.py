@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from ..config import BuildConfig, HookConfig, NativeBuildConfig, PythonBuildConfig
+from ..config import BuildConfig, NativeBuildConfig
 from ..executor import CommandSpec
 
 
-def build_specs(config: BuildConfig, targets: list[str] | None = None) -> list[CommandSpec]:
+def build_specs(
+    config: BuildConfig, targets: list[str] | None = None
+) -> list[CommandSpec]:
     specs: list[CommandSpec] = []
     if config.native is not None:
         specs.extend(_hook_specs(config.native.hooks.pre, "native pre-hook"))
@@ -23,7 +25,9 @@ def build_specs(config: BuildConfig, targets: list[str] | None = None) -> list[C
     return specs
 
 
-def _cmake_specs(config: NativeBuildConfig, targets: list[str] | None) -> list[CommandSpec]:
+def _cmake_specs(
+    config: NativeBuildConfig, targets: list[str] | None
+) -> list[CommandSpec]:
     command = [
         "cmake",
         "-S",
@@ -35,7 +39,9 @@ def _cmake_specs(config: NativeBuildConfig, targets: list[str] | None) -> list[C
         command.extend(["-G", config.generator])
     command.extend(config.configure_args)
 
-    specs = [CommandSpec(command=command, env=config.env, description="cmake configure")]
+    specs = [
+        CommandSpec(command=command, env=config.env, description="cmake configure")
+    ]
 
     active_targets = targets if targets else config.targets
     build_command = [
@@ -55,9 +61,15 @@ def _cmake_specs(config: NativeBuildConfig, targets: list[str] | None) -> list[C
                 )
             )
     else:
-        specs.append(CommandSpec(command=build_command, env=config.env, description="cmake build"))
+        specs.append(
+            CommandSpec(
+                command=build_command, env=config.env, description="cmake build"
+            )
+        )
     return specs
 
 
 def _hook_specs(commands: list[list[str]], description: str) -> list[CommandSpec]:
-    return [CommandSpec(command=command, description=description) for command in commands]
+    return [
+        CommandSpec(command=command, description=description) for command in commands
+    ]

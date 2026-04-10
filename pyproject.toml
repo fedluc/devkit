@@ -22,6 +22,7 @@ test = [
 dev = [
     "build>=1.2",
     "pytest>=8.0",
+    "ruff>=0.11",
     "tox>=4.0",
     "twine>=5.0",
 ]
@@ -34,3 +35,10 @@ packages = ["src/devkit"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

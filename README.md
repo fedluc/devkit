@@ -22,9 +22,15 @@ This repository contains the first implementation pass with:
 pip install -e .[dev]
 ```
 
-2. Add a `devkit.yml` file to your project.
+2. Lint the code during development:
 
-3. Run commands such as:
+```bash
+ruff check .
+```
+
+3. Add a `devkit.yml` file to your project.
+
+4. Run commands such as:
 
 ```bash
 devkit validate
@@ -42,7 +48,7 @@ The repository includes a devcontainer in [`.devcontainer/devcontainer.json`](/U
 When opened in a compatible environment, it installs:
 
 - Python 3.11
-- `devkit` in editable mode with the `dev` extra
+- `devkit` in editable mode with the `dev` extra, including `ruff`
 - common native-tooling dependencies used by package workflows:
   `build-essential`, `clang`, `cmake`, `ninja-build`, `pkg-config`, and `gdb`
 - GitHub CLI (`gh`) for authenticated GitHub API and repository operations

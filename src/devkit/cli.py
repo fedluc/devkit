@@ -43,30 +43,62 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Unified developer CLI for Python/C++ package workflows.")
-    parser.add_argument("--config", default="devkit.yml", help="Path to the devkit YAML configuration file.")
+    parser = argparse.ArgumentParser(
+        description="Unified developer CLI for Python/C++ package workflows."
+    )
+    parser.add_argument(
+        "--config",
+        default="devkit.yml",
+        help="Path to the devkit YAML configuration file.",
+    )
 
     subparsers = parser.add_subparsers(dest="command")
 
-    build_parser = subparsers.add_parser("build", help="Run configured build workflows.")
+    build_parser = subparsers.add_parser(
+        "build", help="Run configured build workflows."
+    )
     _add_profile_arg(build_parser)
-    build_parser.add_argument("--target", action="append", dest="targets", help="Override native build target.")
-    build_parser.add_argument("--dry-run", action="store_true", help="Print commands without executing them.")
+    build_parser.add_argument(
+        "--target",
+        action="append",
+        dest="targets",
+        help="Override native build target.",
+    )
+    build_parser.add_argument(
+        "--dry-run", action="store_true", help="Print commands without executing them."
+    )
 
     test_parser = subparsers.add_parser("test", help="Run configured test workflows.")
     _add_profile_arg(test_parser)
-    test_parser.add_argument("--runner", action="append", help="Run only the named test runner.")
-    test_parser.add_argument("--dry-run", action="store_true", help="Print commands without executing them.")
+    test_parser.add_argument(
+        "--runner", action="append", help="Run only the named test runner."
+    )
+    test_parser.add_argument(
+        "--dry-run", action="store_true", help="Print commands without executing them."
+    )
 
-    deploy_parser = subparsers.add_parser("deploy", help="Run configured deployment workflows.")
+    deploy_parser = subparsers.add_parser(
+        "deploy", help="Run configured deployment workflows."
+    )
     _add_profile_arg(deploy_parser)
-    deploy_parser.add_argument("--target", action="append", dest="targets", help="Run only the named deploy target.")
-    deploy_parser.add_argument("--dry-run", action="store_true", help="Print commands without executing them.")
+    deploy_parser.add_argument(
+        "--target",
+        action="append",
+        dest="targets",
+        help="Run only the named deploy target.",
+    )
+    deploy_parser.add_argument(
+        "--dry-run", action="store_true", help="Print commands without executing them."
+    )
 
-    clean_parser = subparsers.add_parser("clean", help="Remove configured build artifacts.")
+    clean_parser = subparsers.add_parser(
+        "clean", help="Remove configured build artifacts."
+    )
     _add_profile_arg(clean_parser)
 
-    validate_parser = subparsers.add_parser("validate", help="Validate the configuration file.")
+    validate_parser = subparsers.add_parser(
+        "validate", help="Validate the configuration file."
+    )
     _add_profile_arg(validate_parser)
 
     return parser
@@ -76,7 +108,9 @@ def _add_profile_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--profile", help="Configuration profile to apply.")
 
 
-def _run_build(config: DevkitConfig, executor: CommandExecutor, args: argparse.Namespace) -> int:
+def _run_build(
+    config: DevkitConfig, executor: CommandExecutor, args: argparse.Namespace
+) -> int:
     specs = build_specs(config.build, targets=args.targets)
     if not specs:
         raise ConfigError("No build workflows configured")
@@ -84,7 +118,9 @@ def _run_build(config: DevkitConfig, executor: CommandExecutor, args: argparse.N
     return 0
 
 
-def _run_test(config: DevkitConfig, executor: CommandExecutor, args: argparse.Namespace) -> int:
+def _run_test(
+    config: DevkitConfig, executor: CommandExecutor, args: argparse.Namespace
+) -> int:
     selected = _select_named_items(config.tests, args.runner, "test runner")
     specs = []
     for runner in selected.values():
@@ -95,7 +131,9 @@ def _run_test(config: DevkitConfig, executor: CommandExecutor, args: argparse.Na
     return 0
 
 
-def _run_deploy(config: DevkitConfig, executor: CommandExecutor, args: argparse.Namespace) -> int:
+def _run_deploy(
+    config: DevkitConfig, executor: CommandExecutor, args: argparse.Namespace
+) -> int:
     selected = _select_named_items(config.deploy, args.targets, "deploy target")
     specs = []
     for target in selected.values():
@@ -106,7 +144,9 @@ def _run_deploy(config: DevkitConfig, executor: CommandExecutor, args: argparse.
     return 0
 
 
-def _select_named_items(items: dict[str, object], selected_names: list[str] | None, label: str) -> dict[str, object]:
+def _select_named_items(
+    items: dict[str, object], selected_names: list[str] | None, label: str
+) -> dict[str, object]:
     if not selected_names:
         return items
 

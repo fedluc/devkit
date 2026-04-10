@@ -8,9 +8,15 @@ from ..executor import CommandSpec
 
 
 def deploy_specs(project_root: Path, config: DeployTargetConfig) -> list[CommandSpec]:
-    specs = [CommandSpec(command=command, description=f"{config.name} pre-hook") for command in config.hooks.pre]
+    specs = [
+        CommandSpec(command=command, description=f"{config.name} pre-hook")
+        for command in config.hooks.pre
+    ]
     specs.append(_twine_spec(project_root, config))
-    specs.extend(CommandSpec(command=command, description=f"{config.name} post-hook") for command in config.hooks.post)
+    specs.extend(
+        CommandSpec(command=command, description=f"{config.name} post-hook")
+        for command in config.hooks.post
+    )
     return specs
 
 
@@ -23,7 +29,9 @@ def _twine_spec(project_root: Path, config: DeployTargetConfig) -> CommandSpec:
         command.extend(["--repository-url", config.repository_url])
     command.extend(config.args)
     command.extend(artifacts)
-    return CommandSpec(command=command, env=config.env, description=f"deploy target `{config.name}`")
+    return CommandSpec(
+        command=command, env=config.env, description=f"deploy target `{config.name}`"
+    )
 
 
 def _resolve_artifacts(project_root: Path, patterns: list[str]) -> list[str]:

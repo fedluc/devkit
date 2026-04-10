@@ -98,7 +98,9 @@ class DevkitConfig:
     raw: dict[str, Any] = field(repr=False)
 
 
-def load_config(config_path: str | Path = "devkit.yml", profile: str | None = None) -> DevkitConfig:
+def load_config(
+    config_path: str | Path = "devkit.yml", profile: str | None = None
+) -> DevkitConfig:
     path = Path(config_path).resolve()
     if not path.exists():
         raise ConfigError(f"Configuration file not found: {path}")
@@ -168,14 +170,22 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
         if backend not in SUPPORTED_BUILD_BACKENDS:
             raise ConfigError(f"Unsupported build backend: {backend}")
         if backend != "cmake":
-            raise ConfigError("`build.native` currently supports only the `cmake` backend")
+            raise ConfigError(
+                "`build.native` currently supports only the `cmake` backend"
+            )
         native = NativeBuildConfig(
             backend=backend,
-            source_dir=_required_str(native_data, "source_dir", "build.native.source_dir"),
+            source_dir=_required_str(
+                native_data, "source_dir", "build.native.source_dir"
+            ),
             build_dir=_required_str(native_data, "build_dir", "build.native.build_dir"),
             generator=_optional_str(native_data, "generator"),
-            configure_args=_string_list(native_data.get("configure_args"), "build.native.configure_args"),
-            build_args=_string_list(native_data.get("build_args"), "build.native.build_args"),
+            configure_args=_string_list(
+                native_data.get("configure_args"), "build.native.configure_args"
+            ),
+            build_args=_string_list(
+                native_data.get("build_args"), "build.native.build_args"
+            ),
             targets=_string_list(native_data.get("targets"), "build.native.targets"),
             env=_string_mapping(native_data.get("env"), "build.native.env"),
             hooks=_parse_hooks(native_data.get("hooks"), "build.native.hooks"),
@@ -189,7 +199,9 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
         if backend not in SUPPORTED_BUILD_BACKENDS:
             raise ConfigError(f"Unsupported build backend: {backend}")
         if backend != "python-build":
-            raise ConfigError("`build.python` currently supports only the `python-build` backend")
+            raise ConfigError(
+                "`build.python` currently supports only the `python-build` backend"
+            )
         command = python_data.get("command", ["python3", "-m", "build"])
         python_build = PythonBuildConfig(
             backend=backend,
@@ -231,7 +243,9 @@ def _parse_tests(data: dict[str, Any]) -> dict[str, TestRunnerConfig]:
             configure_args=_string_list(
                 runner_data.get("configure_args"), f"test.runners.{name}.configure_args"
             ),
-            build_args=_string_list(runner_data.get("build_args"), f"test.runners.{name}.build_args"),
+            build_args=_string_list(
+                runner_data.get("build_args"), f"test.runners.{name}.build_args"
+            ),
             target=_optional_str(runner_data, "target"),
         )
         _validate_test_runner(runners[name])
@@ -249,18 +263,24 @@ def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
     for name, target_data in targets_data.items():
         if not isinstance(target_data, dict):
             raise ConfigError(f"`deploy.targets.{name}` must be a mapping")
-        backend = _required_str(target_data, "backend", f"deploy.targets.{name}.backend")
+        backend = _required_str(
+            target_data, "backend", f"deploy.targets.{name}.backend"
+        )
         if backend not in SUPPORTED_DEPLOY_BACKENDS:
             raise ConfigError(f"Unsupported deploy backend: {backend}")
         targets[name] = DeployTargetConfig(
             name=name,
             backend=backend,
-            artifacts=_string_list(target_data.get("artifacts"), f"deploy.targets.{name}.artifacts"),
+            artifacts=_string_list(
+                target_data.get("artifacts"), f"deploy.targets.{name}.artifacts"
+            ),
             repository=_optional_str(target_data, "repository"),
             repository_url=_optional_str(target_data, "repository_url"),
             args=_string_list(target_data.get("args"), f"deploy.targets.{name}.args"),
             env=_string_mapping(target_data.get("env"), f"deploy.targets.{name}.env"),
-            hooks=_parse_hooks(target_data.get("hooks"), f"deploy.targets.{name}.hooks"),
+            hooks=_parse_hooks(
+                target_data.get("hooks"), f"deploy.targets.{name}.hooks"
+            ),
         )
         if not targets[name].artifacts:
             raise ConfigError(f"`deploy.targets.{name}.artifacts` must not be empty")
@@ -279,7 +299,9 @@ def _validate_test_runner(config: TestRunnerConfig) -> None:
     if config.backend == "tox" and not config.tox_env:
         raise ConfigError(f"`test.runners.{config.name}.tox_env` is required for tox")
     if config.backend == "ctest" and not config.build_dir:
-        raise ConfigError(f"`test.runners.{config.name}.build_dir` is required for ctest")
+        raise ConfigError(
+            f"`test.runners.{config.name}.build_dir` is required for ctest"
+        )
 
 
 def _parse_hooks(data: Any, path: str) -> HookConfig:
@@ -296,11 +318,7 @@ def _parse_hooks(data: Any, path: str) -> HookConfig:
 def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     result = deep_copy_mapping(base)
     for key, value in override.items():
-        if (
-            key in result
-            and isinstance(result[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = deep_merge(result[key], value)
         else:
             result[key] = deep_copy(value)
@@ -370,7 +388,11 @@ def _command_matrix(value: Any, path: str) -> list[list[str]]:
         raise ConfigError(f"`{path}` must be a list of command arrays")
     commands: list[list[str]] = []
     for index, item in enumerate(value):
-        if not isinstance(item, list) or not all(isinstance(part, str) for part in item) or not item:
+        if (
+            not isinstance(item, list)
+            or not all(isinstance(part, str) for part in item)
+            or not item
+        ):
             raise ConfigError(f"`{path}[{index}]` must be a non-empty list of strings")
         commands.append(list(item))
     return commands
