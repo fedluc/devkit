@@ -40,6 +40,7 @@ Exercise the CLI during development with commands such as `devkit validate`, `de
 
 Shared Python implementation guidance lives in `skills/python-development/`. Use that skill when editing Python code, tests, packaging metadata, or developer-tooling configuration in this repository.
 Shared GitHub execution guidance lives in `skills/github-issue-workflow/`. Use that skill when starting work from GitHub issues or when the task should end with an opened pull request.
+Shared PR review coordination guidance lives in `skills/pr-review-loop/`. Use that skill when one agent should review a PR on GitHub and another agent should implement the published comments without relaying them manually in chat.
 
 ## Coding Style & Naming Conventions
 
@@ -52,6 +53,8 @@ Use `pytest` for all tests. Add new tests in `tests/` with filenames named `test
 ## Commit & Pull Request Guidelines
 
 Recent commits use short, imperative subjects such as `Add devcontainer bootstrap and development docs`. Keep commit titles concise and specific.
+
+Before creating commits or changing git settings, check `.codex/` for repository-local git configuration instructions or other custom workflow notes.
 
 Codex identity: use the repository's configured bot account for repository-local commits, branch pushes, pull request creation, and PR comments or reviews unless the user explicitly asks otherwise.
 
