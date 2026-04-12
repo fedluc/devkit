@@ -5,27 +5,22 @@ from __future__ import annotations
 import re
 import sys
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
 import typer
 import yaml
 
-from .config import DevkitConfig, build_kind, deep_copy_mapping, load_config
-from .errors import ConfigError
-from .output import style, supports_color
-
-
-class WorkflowSelection(str, Enum):
-    """Supported workflow selection values for inspect subcommands."""
-
-    NATIVE = "native"
-    PYTHON = "python"
-    ALL = "all"
-
-
-WORKFLOW_SELECTION_METAVAR = "native|python|all"
+from ..config import DevkitConfig, build_kind, deep_copy_mapping, load_config
+from ..errors import ConfigError
+from ..output import style, supports_color
+from .common import (
+    WORKFLOW_SELECTION_METAVAR,
+    WorkflowSelection,
+    config_path_from_context,
+    select_named_items,
+    selection_value,
+)
 
 
 @dataclass(slots=True)
@@ -69,7 +64,7 @@ def inspect_callback(
     args = InspectArgs(profile=profile, full=full)
     ctx.obj = args
     if ctx.invoked_subcommand is None:
-        return run_inspect(_config_path_from_context(ctx), args)
+        return run_inspect(config_path_from_context(ctx), args)
     return None
 
 
@@ -101,10 +96,10 @@ def inspect_build_command(
         profile=base_args.profile,
         full=base_args.full or full,
         inspect_command="build",
-        selection=_selection_value(selection),
+        selection=selection_value(selection),
         targets=targets,
     )
-    return run_inspect(_config_path_from_context(ctx), args)
+    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("test")
@@ -135,10 +130,10 @@ def inspect_test_command(
         profile=base_args.profile,
         full=base_args.full or full,
         inspect_command="test",
-        selection=_selection_value(selection),
+        selection=selection_value(selection),
         runner=runner,
     )
-    return run_inspect(_config_path_from_context(ctx), args)
+    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("deploy")
@@ -164,14 +159,7 @@ def inspect_deploy_command(
         inspect_command="deploy",
         targets=targets,
     )
-    return run_inspect(_config_path_from_context(ctx), args)
-
-
-def _selection_value(selection: WorkflowSelection | None) -> str | None:
-    """Normalize optional selection enums to raw config values."""
-    if selection is None:
-        return None
-    return selection.value
+    return run_inspect(config_path_from_context(ctx), args)
 
 
 def _inspect_args_from_context(ctx: typer.Context) -> InspectArgs:
@@ -180,15 +168,6 @@ def _inspect_args_from_context(ctx: typer.Context) -> InspectArgs:
     if not isinstance(inspect_args, InspectArgs):
         raise RuntimeError("Inspect context was not initialized")
     return inspect_args
-
-
-def _config_path_from_context(ctx: typer.Context) -> str | Path:
-    """Resolve the top-level ``--config`` option from the root CLI context."""
-    root_context = ctx.find_root()
-    config_path = getattr(root_context.obj, "config", None)
-    if not isinstance(config_path, str | Path):
-        raise RuntimeError("CLI context was not initialized")
-    return config_path
 
 
 def run_inspect(config_path: str | Path, args: InspectArgs) -> int:
@@ -337,7 +316,7 @@ def _build_test_context(config: DevkitConfig, args: InspectArgs) -> dict[str, ob
     Returns:
         Test inspection metadata.
     """
-    selected_runners = _select_named_items(
+    selected_runners = select_named_items(
         config.tests.select_runners(args.selection),
         args.runner,
         "test runner",
@@ -359,7 +338,7 @@ def _build_deploy_context(config: DevkitConfig, args: InspectArgs) -> dict[str, 
     Returns:
         Deploy inspection metadata.
     """
-    selected_targets = _select_named_items(config.deploy, args.targets, "deploy target")
+    selected_targets = select_named_items(config.deploy, args.targets, "deploy target")
     return {
         "command": "deploy",
         "targets": list(selected_targets),
@@ -499,7 +478,7 @@ def _build_effective_test_config(
     if not isinstance(test_section, dict):
         return {}
 
-    selected_runners = _select_named_items(
+    selected_runners = select_named_items(
         config.tests.select_runners(args.selection),
         args.runner,
         "test runner",
@@ -536,7 +515,7 @@ def _build_effective_deploy_config(
     if not isinstance(deploy_section, dict):
         return {}
 
-    selected_targets = _select_named_items(config.deploy, args.targets, "deploy target")
+    selected_targets = select_named_items(config.deploy, args.targets, "deploy target")
     targets_section = deploy_section.get("targets")
     if not isinstance(targets_section, dict):
         return {"deploy": {"targets": {}}}
@@ -579,34 +558,6 @@ def _resolve_active_profile_name(
     if "default" in profiles:
         return "default"
     return None
-
-
-def _select_named_items(
-    items: dict[str, object], selected_names: list[str] | None, label: str
-) -> dict[str, object]:
-    """Filter named configuration items and validate explicit selections.
-
-    Args:
-        items: Available named items.
-        selected_names: Optional list of names explicitly requested by the user.
-        label: Human-readable item label used in validation errors.
-
-    Returns:
-        All items when no explicit selection is given, otherwise only the
-        requested items.
-
-    Raises:
-        ConfigError: If any requested item name is unknown.
-    """
-    if not selected_names:
-        return items
-
-    selected: dict[str, object] = {}
-    for name in selected_names:
-        if name not in items:
-            raise ConfigError(f"Unknown {label}: {name}")
-        selected[name] = items[name]
-    return selected
 
 
 def _emit_document(document: dict[str, object]) -> None:
