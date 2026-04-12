@@ -122,8 +122,8 @@ test:
     assert config.tests.default == "native"
 
 
-def test_load_config_rejects_build_default_for_missing_kind(tmp_path: Path) -> None:
-    """Build defaults must reference configured build kinds."""
+def test_load_config_allows_build_default_for_missing_kind(tmp_path: Path) -> None:
+    """Build defaults can point at a kind that is not currently configured."""
     config_path = write_config(
         tmp_path,
         """
@@ -143,20 +143,15 @@ test:
 """,
     )
 
-    with pytest.raises(
-        ConfigError,
-        match=(
-            "`build.default` selects `python` but no python build workflows "
-            "are configured"
-        ),
-    ):
-        load_config(config_path)
+    config = load_config(config_path)
+
+    assert config.build.default == "python"
 
 
-def test_load_config_rejects_test_default_all_when_kind_is_missing(
+def test_load_config_allows_test_default_all_when_kind_is_missing(
     tmp_path: Path,
 ) -> None:
-    """Test defaults cannot request all kinds unless both are configured."""
+    """Test defaults can request all configured runners even if one kind is absent."""
     config_path = write_config(
         tmp_path,
         """
@@ -174,14 +169,42 @@ test:
 """,
     )
 
-    with pytest.raises(
-        ConfigError,
-        match=(
-            "`test.default` cannot be `all` when test only configures: "
-            "python. Missing: native"
-        ),
-    ):
-        load_config(config_path)
+    config = load_config(config_path)
+
+    assert config.tests.default == "all"
+
+
+def test_load_config_ignores_unconfigured_build_and_test_sections(
+    tmp_path: Path,
+) -> None:
+    """Sections without a backend are treated as not configured."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  default: all
+  native:
+    env:
+      OpenMP_ROOT: /opt/homebrew/opt/libomp
+  python:
+    backend: python-build
+test:
+  runners:
+    native-cpp:
+      env:
+        OpenMP_ROOT: /opt/homebrew/opt/libomp
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    config = load_config(config_path)
+
+    assert config.build.available_kinds() == ["python"]
+    assert list(config.tests.runners) == ["unit"]
 
 
 def test_load_config_rejects_build_section_backend_mismatch(tmp_path: Path) -> None:

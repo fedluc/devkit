@@ -160,13 +160,15 @@ def _run_build(
         ConfigError: If no matching build workflows are configured or if
             incompatible CLI options are combined.
     """
+    resolved_selection = args.selection or config.build.default
+
     if args.targets and config.build.selected_kinds(args.selection) == ["python"]:
         raise ConfigError("`build --target` can only be used with native builds")
 
     plan = plan_build(config.build, selection=args.selection, targets=args.targets)
     if not plan.specs:
-        if args.selection:
-            raise ConfigError(f"No {args.selection} build workflows configured")
+        if resolved_selection and resolved_selection != "all":
+            raise ConfigError(f"No {resolved_selection} build workflows configured")
         raise ConfigError("No build workflows configured")
     executor.run_specs(plan.specs, dry_run=args.dry_run)
     return 0
@@ -188,12 +190,13 @@ def _run_test(
     Raises:
         ConfigError: If no matching test workflows are configured.
     """
+    resolved_selection = args.selection or config.tests.default
     selected_by_kind = config.tests.select_runners(args.selection)
     selected = _select_named_items(selected_by_kind, args.runner, "test runner")
     plan = plan_tests(list(selected.values()))
     if not plan.specs:
-        if args.selection:
-            raise ConfigError(f"No {args.selection} test workflows configured")
+        if resolved_selection and resolved_selection != "all":
+            raise ConfigError(f"No {resolved_selection} test workflows configured")
         raise ConfigError("No test workflows configured")
     executor.run_specs(plan.specs, dry_run=args.dry_run)
     return 0

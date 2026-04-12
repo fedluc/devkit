@@ -439,7 +439,9 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
             continue
         if not isinstance(build_data, dict):
             raise ConfigError(f"`build.{name}` must be a mapping")
-        backend = _required_str(build_data, "backend", f"build.{name}.backend")
+        backend = _optional_str(build_data, "backend")
+        if backend is None:
+            continue
         if backend not in _supported_build_backends():
             raise ConfigError(
                 _unsupported_backend_message(
@@ -465,9 +467,6 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
 
     build_config = BuildConfig(
         default=default, entries=entries, native=native, python=python_build
-    )
-    _validate_selected_kinds(
-        build_config.available_kinds(), build_config.default, "build.default", "build"
     )
     return build_config
 
@@ -539,7 +538,9 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
     for name, runner_data in runners_data.items():
         if not isinstance(runner_data, dict):
             raise ConfigError(f"`test.runners.{name}` must be a mapping")
-        backend = _required_str(runner_data, "backend", f"test.runners.{name}.backend")
+        backend = _optional_str(runner_data, "backend")
+        if backend is None:
+            continue
         if backend not in _supported_test_backends():
             raise ConfigError(
                 _unsupported_backend_message(
@@ -568,9 +569,6 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
         )
         _validate_test_runner(runners[name])
     test_config = TestConfig(default=default, runners=runners)
-    _validate_selected_kinds(
-        test_config.available_kinds(), test_config.default, "test.default", "test"
-    )
     return test_config
 
 
@@ -948,41 +946,6 @@ def _parse_workflow_selection(value: Any, path: str) -> str | None:
         expected = ", ".join(WORKFLOW_SELECTIONS)
         raise ConfigError(f"`{path}` must be one of: {expected}")
     return value
-
-
-def _validate_selected_kinds(
-    available_kinds: list[str], selected: str | None, path: str, workflow: str
-) -> None:
-    """Validate that a configured default selection matches configured kinds.
-
-    Args:
-        available_kinds: Workflow kinds present in the active configuration.
-        selected: Configured default workflow kind.
-        path: Configuration path used in validation errors.
-        workflow: Human-readable workflow name for diagnostics.
-
-    Raises:
-        ConfigError: If the configured default references missing workflow kinds.
-    """
-
-    if selected is None:
-        return
-    if selected == "all":
-        if not available_kinds:
-            return
-        missing = [kind for kind in WORKFLOW_KINDS if kind not in available_kinds]
-        if missing:
-            missing_str = ", ".join(missing)
-            raise ConfigError(
-                f"`{path}` cannot be `all` when {workflow} only configures: "
-                f"{', '.join(available_kinds)}. Missing: {missing_str}"
-            )
-        return
-    if selected not in available_kinds:
-        raise ConfigError(
-            f"`{path}` selects `{selected}` but no {selected} {workflow} workflows "
-            "are configured"
-        )
 
 
 def build_kind(config: NativeBuildConfig | PythonBuildConfig) -> str:

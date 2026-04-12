@@ -278,3 +278,102 @@ test:
 
     assert exit_code == 0
     assert captured["descriptions"] == ["pytest runner `unit`"]
+
+
+def test_validate_accepts_example_style_profile_overrides_without_backend(
+    tmp_path: Path, capsys
+) -> None:
+    """Validation ignores profile-only build or test fragments without backend."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+profiles:
+  default:
+    build:
+      native:
+        env:
+          OpenMP_ROOT: /opt/homebrew/opt/libomp
+    test:
+      runners:
+        native-cpp:
+          env:
+            OpenMP_ROOT: /opt/homebrew/opt/libomp
+build:
+  default: all
+  python:
+    backend: python-build
+test:
+  default: all
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "validate"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Configuration valid" in captured.out
+
+
+def test_build_uses_default_selection_error_when_default_kind_is_missing(
+    tmp_path: Path, capsys
+) -> None:
+    """Build reports the default kind when it points to no configured workflow."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  default: native
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "build", "--dry-run"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "No native build workflows configured" in captured.err
+
+
+def test_test_uses_default_selection_error_when_default_kind_is_missing(
+    tmp_path: Path, capsys
+) -> None:
+    """Test reports the default kind when it points to no configured workflow."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  default: native
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "test", "--dry-run"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "No native test workflows configured" in captured.err
