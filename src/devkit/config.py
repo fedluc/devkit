@@ -556,6 +556,7 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
     """
     if not isinstance(data, dict):
         raise ConfigError("`test` must be a mapping")
+    _reject_unknown_keys(data, "test", {"default", "runners"})
     runners_data = data.get("runners") or {}
     if not isinstance(runners_data, dict):
         raise ConfigError("`test.runners` must be a mapping")
@@ -621,6 +622,7 @@ def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
     """
     if not isinstance(data, dict):
         raise ConfigError("`deploy` must be a mapping")
+    _reject_unknown_keys(data, "deploy", {"targets"})
     targets_data = data.get("targets") or {}
     if not isinstance(targets_data, dict):
         raise ConfigError("`deploy.targets` must be a mapping")
@@ -677,6 +679,20 @@ def _parse_clean(data: dict[str, Any]) -> CleanConfig:
     if not isinstance(data, dict):
         raise ConfigError("`clean` must be a mapping")
     return CleanConfig(paths=_string_list(data.get("paths"), "clean.paths"))
+
+
+def _reject_unknown_keys(
+    data: dict[str, Any], section: str, allowed_keys: set[str]
+) -> None:
+    """Reject unexpected keys in a top-level config section."""
+    for key in data:
+        if key in allowed_keys:
+            continue
+        allowed = ", ".join(sorted(allowed_keys))
+        raise ConfigError(
+            f"`{section}.{key}` is not a supported configuration key",
+            hint=f"Use only these keys under `{section}`: {allowed}.",
+        )
 
 
 def _validate_test_runner(config: TestRunnerConfig) -> None:

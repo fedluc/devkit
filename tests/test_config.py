@@ -90,6 +90,56 @@ test:
         load_config(config_path)
 
 
+def test_load_config_rejects_unknown_test_keys(tmp_path: Path) -> None:
+    """Test config only accepts the default and runners keys."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+test:
+  adas:
+    backend: pytest
+    path: tests
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`test.adas` is not a supported configuration key",
+    ):
+        load_config(config_path)
+
+
+def test_load_config_rejects_unknown_deploy_keys(tmp_path: Path) -> None:
+    """Deploy config only accepts the targets key."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+deploy:
+  adas:
+    backend: twine
+    artifacts: ["dist/*"]
+  targets:
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`deploy.adas` is not a supported configuration key",
+    ):
+        load_config(config_path)
+
+
 def test_load_config_rejects_python_build_command_override(tmp_path: Path) -> None:
     """The python-build backend uses a fixed command and only accepts args."""
     config_path = write_config(
