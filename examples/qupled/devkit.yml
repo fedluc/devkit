@@ -32,18 +32,14 @@ build:
     backend: cmake
     source_dir: src/qupled/native/src
     build_dir: dist-native
-  # native:
-  #   backend: cmake
-  #   source_dir: src/qupled/native/src
-  #   build_dir: dist-native
-  #   configure_args:
-  #     - -DBUILD_NATIVE_TESTS=OFF
-  #     - -DUSE_MPI=OFF
-  # python:
-  #   backend: python-build
-  #   env:
-  #     BUILD_NATIVE_TESTS: "OFF"
-  #     USE_MPI: "OFF"
+    configure_args:
+      - -DBUILD_NATIVE_TESTS=OFF
+      - -DUSE_MPI=OFF
+  python:
+    backend: python-build
+    env:
+      BUILD_NATIVE_TESTS: "OFF"
+      USE_MPI: "OFF"
 
 test:
   default: all

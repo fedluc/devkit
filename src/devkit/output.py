@@ -53,49 +53,6 @@ def format_detail(label: str, value: str, *, stream: TextIO | None = None) -> st
     return f"  {style(label, 'label', stream)}: {value}"
 
 
-def format_validation_summary(
-    project_name: str,
-    *,
-    active_profile: str | None,
-    build_workflows: list[str],
-    test_runners: list[str],
-    deploy_targets: list[str],
-    clean_paths: list[str],
-    stream: TextIO | None = None,
-) -> str:
-    """Build a concise validation success summary."""
-    lines = [
-        format_status(
-            "Validation OK",
-            f"project `{project_name}` is ready to use",
-            tone="success",
-            stream=stream,
-        ),
-        format_detail("Profile", active_profile or "none", stream=stream),
-        format_detail(
-            "Build workflows",
-            ", ".join(build_workflows) if build_workflows else "none",
-            stream=stream,
-        ),
-        format_detail(
-            "Test runners",
-            ", ".join(test_runners) if test_runners else "none",
-            stream=stream,
-        ),
-        format_detail(
-            "Deploy targets",
-            ", ".join(deploy_targets) if deploy_targets else "none",
-            stream=stream,
-        ),
-        format_detail(
-            "Clean paths",
-            ", ".join(clean_paths) if clean_paths else "none",
-            stream=stream,
-        ),
-    ]
-    return "\n".join(lines)
-
-
 def format_command(
     command: str,
     *,

@@ -7,8 +7,6 @@ import shutil
 import sys
 from pathlib import Path
 
-import yaml
-
 from .adapters.build import plan_build
 from .adapters.deploy import plan_deploy
 from .adapters.testing import plan_tests
@@ -16,12 +14,8 @@ from .config import WORKFLOW_SELECTIONS, DevkitConfig, load_config
 from .errors import ConfigError, DevkitError
 from .executor import CommandExecutor
 from .inspect import add_inspect_parser, run_inspect
-from .output import (
-    format_clean_action,
-    format_clean_summary,
-    format_error,
-    format_validation_summary,
-)
+from .output import format_clean_action, format_clean_summary, format_error
+from .validate import run_validate
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,23 +39,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "inspect":
             return run_inspect(args.config, args)
 
-        config = load_config(args.config, getattr(args, "profile", None))
-
         if args.command == "validate":
-            print(
-                format_validation_summary(
-                    config.project.name,
-                    active_profile=_resolve_active_profile_name(
-                        args.config, getattr(args, "profile", None)
-                    ),
-                    build_workflows=list(config.build.entries)
-                    or config.build.available_kinds(),
-                    test_runners=list(config.tests.runners),
-                    deploy_targets=list(config.deploy),
-                    clean_paths=config.clean.paths,
-                )
-            )
-            return 0
+            return run_validate(args.config, getattr(args, "profile", None))
+
+        config = load_config(args.config, getattr(args, "profile", None))
         executor = CommandExecutor(config.project_root)
         if args.command == "build":
             return _run_build(config, executor, args)
@@ -314,27 +295,6 @@ def _run_clean(config: DevkitConfig) -> int:
         removed_any = True
     print(format_clean_summary(removed_any))
     return 0
-
-
-def _resolve_active_profile_name(
-    config_path: str | Path, requested_profile: str | None
-) -> str | None:
-    """Resolve the active profile name for validate output."""
-    if requested_profile is not None:
-        return requested_profile
-
-    path = Path(config_path).resolve()
-    with path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
-    if not isinstance(data, dict):
-        return None
-
-    profiles = data.get("profiles")
-    if not isinstance(profiles, dict):
-        return None
-    if "default" in profiles:
-        return "default"
-    return None
 
 
 if __name__ == "__main__":

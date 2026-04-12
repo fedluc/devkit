@@ -1,0 +1,95 @@
+"""Helpers for the ``devkit validate`` command."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+from .config import DevkitConfig, load_config
+from .output import format_detail, format_status
+
+
+@dataclass(frozen=True)
+class ValidationSummary:
+    """User-facing validation summary details."""
+
+    project_name: str
+    active_profile: str | None
+    build_workflows: list[str]
+    test_runners: list[str]
+    deploy_targets: list[str]
+    clean_paths: list[str]
+
+
+def run_validate(config_path: str | Path, profile: str | None) -> int:
+    """Validate the configuration file and print a concise summary."""
+    config = load_config(config_path, profile)
+    summary = _build_validation_summary(config, config_path, profile)
+    print(_format_validation_summary(summary))
+    return 0
+
+
+def _build_validation_summary(
+    config: DevkitConfig, config_path: str | Path, requested_profile: str | None
+) -> ValidationSummary:
+    """Build the success summary for a validated configuration."""
+    return ValidationSummary(
+        project_name=config.project.name,
+        active_profile=_resolve_active_profile_name(config_path, requested_profile),
+        build_workflows=list(config.build.entries) or config.build.available_kinds(),
+        test_runners=list(config.tests.runners),
+        deploy_targets=list(config.deploy),
+        clean_paths=config.clean.paths,
+    )
+
+
+def _format_validation_summary(summary: ValidationSummary) -> str:
+    """Render the validate success summary."""
+    lines = [
+        format_status(
+            "Validation OK",
+            f"project `{summary.project_name}` is ready to use",
+            tone="success",
+        ),
+        format_detail("Profile", summary.active_profile or "none"),
+        format_detail(
+            "Build workflows",
+            ", ".join(summary.build_workflows) if summary.build_workflows else "none",
+        ),
+        format_detail(
+            "Test runners",
+            ", ".join(summary.test_runners) if summary.test_runners else "none",
+        ),
+        format_detail(
+            "Deploy targets",
+            ", ".join(summary.deploy_targets) if summary.deploy_targets else "none",
+        ),
+        format_detail(
+            "Clean paths",
+            ", ".join(summary.clean_paths) if summary.clean_paths else "none",
+        ),
+    ]
+    return "\n".join(lines)
+
+
+def _resolve_active_profile_name(
+    config_path: str | Path, requested_profile: str | None
+) -> str | None:
+    """Resolve the active profile name for validate output."""
+    if requested_profile is not None:
+        return requested_profile
+
+    path = Path(config_path).resolve()
+    with path.open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    if not isinstance(data, dict):
+        return None
+
+    profiles = data.get("profiles")
+    if not isinstance(profiles, dict):
+        return None
+    if "default" in profiles:
+        return "default"
+    return None
