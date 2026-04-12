@@ -120,8 +120,6 @@ test:
 
     assert config.build.default == "python"
     assert config.tests.default == "native"
-    assert config.tests.runners["unit"].kind == "python"
-    assert config.tests.runners["native-cpp"].kind == "native"
 
 
 def test_load_config_rejects_build_default_for_missing_kind(tmp_path: Path) -> None:

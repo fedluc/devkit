@@ -104,7 +104,6 @@ def test_plan_tests_ctest_runner_can_prepare_target_before_running() -> None:
     """ctest runners can configure and build before executing tests."""
     runner = cfg.TestRunnerConfig(
         name="native",
-        kind="native",
         backend="ctest",
         source_dir="src/native",
         build_dir="build/native-tests",
@@ -166,12 +165,8 @@ def test_plan_deploy_resolves_matching_artifacts(tmp_path: Path) -> None:
 def test_plan_tests_combines_selected_runner_contracts() -> None:
     """Test planning combines multiple registered runner backends."""
     runners = [
-        cfg.TestRunnerConfig(
-            name="unit", kind="python", backend="pytest", path="tests/unit"
-        ),
-        cfg.TestRunnerConfig(
-            name="integration", kind="python", backend="tox", tox_env="py311"
-        ),
+        cfg.TestRunnerConfig(name="unit", backend="pytest", path="tests/unit"),
+        cfg.TestRunnerConfig(name="integration", backend="tox", tox_env="py311"),
     ]
 
     plan = plan_tests(runners)

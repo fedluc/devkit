@@ -176,7 +176,7 @@ class TestConfig:
             Ordered test kinds present in the configured runners.
         """
 
-        return _ordered_unique(runner.kind for runner in self.runners.values())
+        return _ordered_unique(test_kind(runner) for runner in self.runners.values())
 
     def selected_kinds(self, selection: str | None = None) -> list[str]:
         """Resolve the active test kinds for an invocation.
@@ -209,7 +209,7 @@ class TestConfig:
         return {
             name: runner
             for name, runner in self.runners.items()
-            if runner.kind in active_kinds
+            if test_kind(runner) in active_kinds
         }
 
 
@@ -219,7 +219,6 @@ class TestRunnerConfig:
 
     Attributes:
         name: Runner name from the configuration file.
-        kind: Logical test kind used for CLI selection.
         backend: Test backend identifier.
         args: Extra backend-specific command arguments.
         env: Environment variables applied to generated commands.
@@ -236,7 +235,6 @@ class TestRunnerConfig:
     """
 
     name: str
-    kind: str
     backend: str
     args: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
@@ -550,7 +548,6 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
             )
         runners[name] = TestRunnerConfig(
             name=name,
-            kind=_parse_test_kind(runner_data, name, backend),
             backend=backend,
             args=_string_list(runner_data.get("args"), f"test.runners.{name}.args"),
             env=_string_mapping(runner_data.get("env"), f"test.runners.{name}.env"),
@@ -953,45 +950,6 @@ def _parse_workflow_selection(value: Any, path: str) -> str | None:
     return value
 
 
-def _parse_test_kind(data: dict[str, Any], name: str, backend: str) -> str:
-    """Parse or infer the logical kind for a configured test runner.
-
-    Args:
-        data: Raw runner configuration mapping.
-        name: Runner name from ``test.runners``.
-        backend: Registered backend identifier for the runner.
-
-    Returns:
-        Logical runner kind used for CLI selection.
-
-    Raises:
-        ConfigError: If the configured kind uses an unsupported value.
-    """
-
-    path = f"test.runners.{name}.kind"
-    kind = _parse_workflow_selection(data.get("kind"), path)
-    if kind == "all":
-        raise ConfigError(f"`{path}` must be one of: native, python")
-    if kind is not None:
-        return kind
-    return _default_test_kind(backend)
-
-
-def _default_test_kind(backend: str) -> str:
-    """Infer a default test kind from the configured backend.
-
-    Args:
-        backend: Registered test backend identifier.
-
-    Returns:
-        Default logical kind implied by the backend.
-    """
-
-    if backend == "ctest":
-        return "native"
-    return "python"
-
-
 def _validate_selected_kinds(
     available_kinds: list[str], selected: str | None, path: str, workflow: str
 ) -> None:
@@ -1038,6 +996,21 @@ def build_kind(config: NativeBuildConfig | PythonBuildConfig) -> str:
     """
 
     if isinstance(config, NativeBuildConfig):
+        return "native"
+    return "python"
+
+
+def test_kind(config: TestRunnerConfig) -> str:
+    """Return the logical kind for a parsed test runner config.
+
+    Args:
+        config: Parsed test runner configuration.
+
+    Returns:
+        Logical test kind associated with the runner backend.
+    """
+
+    if config.backend == "ctest":
         return "native"
     return "python"
 
