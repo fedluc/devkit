@@ -64,8 +64,8 @@ test:
         load_config(config_path)
 
 
-def test_load_config_accepts_generic_named_build_entries(tmp_path: Path) -> None:
-    """Build config can use arbitrary section names with registered backends."""
+def test_load_config_rejects_unknown_build_entry_names(tmp_path: Path) -> None:
+    """Build config only accepts the native and python workflow entry names."""
     config_path = write_config(
         tmp_path,
         """
@@ -83,10 +83,11 @@ test:
 """,
     )
 
-    config = load_config(config_path)
-
-    assert "wheelhouse" in config.build.entries
-    assert config.build.python is None
+    with pytest.raises(
+        ConfigError,
+        match="`build.wheelhouse` is not a supported build entry",
+    ):
+        load_config(config_path)
 
 
 def test_load_config_rejects_python_build_command_override(tmp_path: Path) -> None:

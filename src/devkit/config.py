@@ -453,6 +453,14 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
     for name, build_data in data.items():
         if name == "default":
             continue
+        if name not in WORKFLOW_KINDS:
+            raise ConfigError(
+                f"`build.{name}` is not a supported build entry",
+                hint=(
+                    "Use `build.native` and/or `build.python` for "
+                    "configured build workflows."
+                ),
+            )
         if not isinstance(build_data, dict):
             raise ConfigError(f"`build.{name}` must be a mapping")
         backend = _optional_str(build_data, "backend", f"build.{name}.backend")
