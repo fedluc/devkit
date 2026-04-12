@@ -64,8 +64,8 @@ test:
         load_config(config_path)
 
 
-def test_load_config_accepts_generic_named_build_entries(tmp_path: Path) -> None:
-    """Build config can use arbitrary section names with registered backends."""
+def test_load_config_rejects_unknown_build_entry_names(tmp_path: Path) -> None:
+    """Build config only accepts the native and python workflow entry names."""
     config_path = write_config(
         tmp_path,
         """
@@ -83,10 +83,61 @@ test:
 """,
     )
 
-    config = load_config(config_path)
+    with pytest.raises(
+        ConfigError,
+        match="`build.wheelhouse` is not a supported build entry",
+    ):
+        load_config(config_path)
 
-    assert "wheelhouse" in config.build.entries
-    assert config.build.python is None
+
+def test_load_config_rejects_unknown_test_keys(tmp_path: Path) -> None:
+    """Test config only accepts the default and runners keys."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+test:
+  adas:
+    backend: pytest
+    path: tests
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`test.adas` is not a supported configuration key",
+    ):
+        load_config(config_path)
+
+
+def test_load_config_rejects_unknown_deploy_keys(tmp_path: Path) -> None:
+    """Deploy config only accepts the targets key."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+deploy:
+  adas:
+    backend: twine
+    artifacts: ["dist/*"]
+  targets:
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`deploy.adas` is not a supported configuration key",
+    ):
+        load_config(config_path)
 
 
 def test_load_config_rejects_python_build_command_override(tmp_path: Path) -> None:
@@ -249,7 +300,13 @@ build:
 """,
     )
 
-    with pytest.raises(ConfigError, match="build.native.*native build backend"):
+    with pytest.raises(
+        ConfigError,
+        match=(
+            "Unsupported build backend: python-build. "
+            "Supported backends: cmake"
+        ),
+    ):
         load_config(config_path)
 
 
@@ -275,7 +332,7 @@ deploy:
 def test_load_config_lists_supported_build_backends_for_unknown_backend(
     tmp_path: Path,
 ) -> None:
-    """Unknown build backends report the registered backend names."""
+    """Unknown native build backends only list native-compatible backends."""
     config_path = write_config(
         tmp_path,
         """
@@ -289,10 +346,83 @@ build:
 
     with pytest.raises(
         ConfigError,
+        match=("Unsupported build backend: unknown. Supported backends: cmake"),
+    ):
+        load_config(config_path)
+
+
+def test_load_config_lists_supported_python_build_backends_for_unknown_backend(
+    tmp_path: Path,
+) -> None:
+    """Unknown python build backends only list Python-compatible backends."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: unknown
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match=("Unsupported build backend: unknown. Supported backends: python-build"),
+    ):
+        load_config(config_path)
+
+
+def test_load_config_lists_supported_test_backends_for_unknown_backend(
+    tmp_path: Path,
+) -> None:
+    """Unknown test backends list the registered test backends."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+test:
+  runners:
+    unit:
+      backend: unknown
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
         match=(
-            "Unsupported build backend: unknown. "
-            "Supported backends: cmake, python-build"
+            "Unsupported test backend: unknown. Supported backends: ctest, pytest, tox"
         ),
+    ):
+        load_config(config_path)
+
+
+def test_load_config_lists_supported_deploy_backends_for_unknown_backend(
+    tmp_path: Path,
+) -> None:
+    """Unknown deploy backends list the registered deploy backends."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+deploy:
+  targets:
+    pypi:
+      backend: unknown
+      artifacts: ["dist/*"]
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match=("Unsupported deploy backend: unknown. Supported backends: twine"),
     ):
         load_config(config_path)
 
