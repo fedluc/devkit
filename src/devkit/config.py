@@ -973,10 +973,9 @@ def test_kind(config: TestRunnerConfig) -> str:
     Returns:
         Logical test kind associated with the runner backend.
     """
+    from .adapters.testing import test_backend_kind
 
-    if config.backend == "ctest":
-        return "native"
-    return "python"
+    return test_backend_kind(config.backend)
 
 
 def _ordered_unique(values: Any) -> list[str]:
