@@ -50,14 +50,11 @@ test:
       path: tests
       marker: unit
       args: ["-v"]
-      kind: python
     integration:
       backend: tox
       tox_env: integration
-      kind: python
     native-cpp:
       backend: ctest
-      kind: native
       source_dir: src/qupled/native/src
       build_dir: dist-native-tests
       target: native_tests

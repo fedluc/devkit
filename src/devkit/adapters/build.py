@@ -35,7 +35,7 @@ def plan_build(
         specs.extend(
             contract.plan(
                 build_config,
-                BuildRequest(selection=selection, targets=targets),
+                BuildRequest(targets=targets),
             )
         )
     return WorkflowPlan(specs=specs)
@@ -136,12 +136,15 @@ def _cmake_plan(config: NativeBuildConfig, request: BuildRequest) -> list[Comman
     return specs
 
 
-def _python_build_plan(config: PythonBuildConfig, _: BuildRequest) -> list[CommandSpec]:
+def _python_build_plan(
+    config: PythonBuildConfig, _request: BuildRequest
+) -> list[CommandSpec]:
     """Build commands for the Python package build backend.
 
     Args:
         config: Parsed Python build configuration.
-        _: Unused build planning options.
+        _request: Unused build planning options required by the backend
+            contract.
 
     Returns:
         Command specs for the Python build workflow.

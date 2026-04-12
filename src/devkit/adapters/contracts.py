@@ -17,12 +17,10 @@ class BuildRequest:
     """Options used when planning build backend commands.
 
     Attributes:
-        selection: Optional explicit build kind requested by the CLI.
         targets: Optional explicit native build targets requested by the CLI.
             When unset, the backend should use its configured default targets.
     """
 
-    selection: str | None = None
     targets: list[str] | None = None
 
 
