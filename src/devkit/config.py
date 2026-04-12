@@ -265,6 +265,7 @@ def apply_profile(data: dict[str, Any], profile: str | None) -> dict[str, Any]:
     profile_data = profiles[active_profile]
     if not isinstance(profile_data, dict):
         raise ConfigError(f"Profile `{active_profile}` must be a mapping")
+    _validate_profile_override(base, profile_data, f"profiles.{active_profile}")
     return deep_merge(base, profile_data)
 
 
@@ -612,6 +613,53 @@ def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]
         else:
             result[key] = deep_copy(value)
     return result
+
+
+def _validate_profile_override(
+    base: dict[str, Any], override: dict[str, Any], path: str
+) -> None:
+    """Validate that a profile override is compatible with the base config.
+
+    Args:
+        base: Base configuration mapping before profile application.
+        override: Profile override mapping at the current path.
+        path: Configuration path for field-level diagnostics.
+
+    Raises:
+        ConfigError: If the override changes container shape or swaps an
+            existing backend identifier.
+    """
+    for key, value in override.items():
+        current_path = f"{path}.{key}"
+        if key not in base:
+            continue
+
+        base_value = base[key]
+        if isinstance(base_value, dict):
+            if not isinstance(value, dict):
+                raise ConfigError(
+                    f"`{current_path}` must remain a mapping in profile overrides"
+                )
+            _validate_profile_override(base_value, value, current_path)
+            continue
+
+        if isinstance(value, dict):
+            raise ConfigError(
+                f"`{current_path}` cannot replace a scalar or list with a mapping"
+            )
+
+        if isinstance(base_value, list):
+            if not isinstance(value, list):
+                raise ConfigError(
+                    f"`{current_path}` must remain a list in profile overrides"
+                )
+            continue
+
+        if key == "backend" and base_value != value:
+            raise ConfigError(
+                f"`{current_path}` cannot change backend from "
+                f"`{base_value}` to `{value}` in profile overrides"
+            )
 
 
 def deep_copy_mapping(value: dict[str, Any]) -> dict[str, Any]:
