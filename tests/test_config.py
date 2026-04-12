@@ -89,6 +89,35 @@ test:
     assert config.build.python is None
 
 
+def test_load_config_rejects_python_build_command_override(tmp_path: Path) -> None:
+    """The python-build backend uses a fixed command and only accepts args."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    command: ["python3", "-m", "build"]
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match=(
+            "`build.python.command` is not supported for the `python-build` "
+            "backend; use `args` to pass extra flags"
+        ),
+    ):
+        load_config(config_path)
+
+
 def test_load_config_parses_build_and_test_defaults(tmp_path: Path) -> None:
     """Workflow defaults are loaded for build and test selection."""
     config_path = write_config(

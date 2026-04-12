@@ -37,7 +37,6 @@ build:
       - -DUSE_MPI=OFF
   python:
     backend: python-build
-    command: ["python3", "-m", "build"]
     env:
       BUILD_NATIVE_TESTS: "OFF"
       USE_MPI: "OFF"

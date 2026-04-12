@@ -9,6 +9,7 @@ from .common import split_hooks
 from .contracts import BackendContract, BuildRequest, WorkflowPlan
 
 BuildBackendConfig = NativeBuildConfig | PythonBuildConfig
+PYTHON_BUILD_COMMAND = ["python3", "-m", "build"]
 
 
 def plan_build(
@@ -153,7 +154,7 @@ def _python_build_plan(
     pre_hooks, post_hooks = split_hooks(config.hooks, "python build")
     specs = pre_hooks + [
         CommandSpec(
-            command=config.command + config.args,
+            command=PYTHON_BUILD_COMMAND + config.args,
             env=config.env,
             description="python package build",
         )

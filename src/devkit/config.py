@@ -60,14 +60,12 @@ class PythonBuildConfig:
 
     Attributes:
         backend: Python build backend identifier.
-        command: Base command used to build the package.
         args: Extra arguments passed to the build command.
         env: Environment variables applied to generated commands.
         hooks: Commands executed around Python build steps.
     """
 
     backend: str
-    command: list[str] = field(default_factory=lambda: ["python3", "-m", "build"])
     args: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
     hooks: HookConfig = field(default_factory=HookConfig)
@@ -504,10 +502,13 @@ def _parse_build_backend(
             hooks=_parse_hooks(data.get("hooks"), f"{path}.hooks"),
         )
     if backend == "python-build":
-        command = data.get("command", ["python3", "-m", "build"])
+        if "command" in data:
+            raise ConfigError(
+                f"`{path}.command` is not supported for the `python-build` backend; "
+                "use `args` to pass extra flags"
+            )
         return PythonBuildConfig(
             backend=backend,
-            command=_command_list(command, f"{path}.command"),
             args=_string_list(data.get("args"), f"{path}.args"),
             env=_string_mapping(data.get("env"), f"{path}.env"),
             hooks=_parse_hooks(data.get("hooks"), f"{path}.hooks"),

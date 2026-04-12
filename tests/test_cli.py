@@ -33,6 +33,38 @@ clean:
     return config
 
 
+def test_validate_rejects_python_build_command_override(
+    tmp_path: Path, capsys
+) -> None:
+    """Validation rejects redundant python-build command overrides."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    command: ["python3", "-m", "build"]
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "validate"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert (
+        "`build.python.command` is not supported for the `python-build` backend"
+        in captured.err
+    )
+
+
 def test_validate_command_succeeds(tmp_path: Path, capsys) -> None:
     """The validate command reports success for a valid config."""
     config = write_config(tmp_path)
