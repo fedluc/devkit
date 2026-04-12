@@ -79,6 +79,27 @@ def test_plan_build_returns_registered_backend_specs_in_order() -> None:
     ]
 
 
+def test_plan_build_can_select_only_python_backends() -> None:
+    """Build planning can narrow execution to Python workflows."""
+    config = cfg.BuildConfig(
+        entries={
+            "native": cfg.NativeBuildConfig(
+                backend="cmake",
+                source_dir="src/native",
+                build_dir="build/native",
+            ),
+            "wheel": cfg.PythonBuildConfig(
+                backend="python-build",
+                args=["--wheel"],
+            ),
+        }
+    )
+
+    plan = plan_build(config, selection="python")
+
+    assert [spec.description for spec in plan.specs] == ["python package build"]
+
+
 def test_plan_tests_ctest_runner_can_prepare_target_before_running() -> None:
     """ctest runners can configure and build before executing tests."""
     runner = cfg.TestRunnerConfig(

@@ -33,6 +33,36 @@ clean:
     return config
 
 
+def test_validate_rejects_python_build_command_override(tmp_path: Path, capsys) -> None:
+    """Validation rejects redundant python-build command overrides."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    command: ["python3", "-m", "build"]
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "validate"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert (
+        "`build.python.command` is not supported for the `python-build` backend"
+        in captured.err
+    )
+
+
 def test_validate_command_succeeds(tmp_path: Path, capsys) -> None:
     """The validate command reports success for a valid config."""
     config = write_config(tmp_path)
@@ -130,3 +160,379 @@ build:
         ["cmake", "-S", "cpp", "-B", "build"],
         ["cmake", "--build", "build", "--parallel", "--target", "cli-target"],
     ]
+
+
+def test_build_selection_runs_only_selected_workflow_kind(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Explicit build selection narrows execution to the requested kind."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  native:
+    backend: cmake
+    source_dir: cpp
+    build_dir: build
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["commands"] = [spec.command for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "build", "python", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["commands"] == [["python3", "-m", "build"]]
+
+
+def test_build_uses_default_selection_when_cli_selection_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Build defaults apply when the CLI does not specify a selection."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  default: python
+  native:
+    backend: cmake
+    source_dir: cpp
+    build_dir: build
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["commands"] = [spec.command for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "build", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["commands"] == [["python3", "-m", "build"]]
+
+
+def test_test_selection_runs_only_selected_runner_kind(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Explicit test selection narrows execution to matching runner kinds."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    native-cpp:
+      backend: ctest
+      build_dir: build/tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "test", "native", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["ctest runner `native-cpp`"]
+
+
+def test_build_all_selection_runs_all_configured_workflows(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The explicit all build selection includes every configured build kind."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  native:
+    backend: cmake
+    source_dir: cpp
+    build_dir: build
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "build", "all", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == [
+        "cmake configure",
+        "cmake build",
+        "python package build",
+    ]
+
+
+def test_test_uses_default_selection_when_cli_selection_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Test defaults apply when the CLI does not specify a selection."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  default: python
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    native-cpp:
+      backend: ctest
+      build_dir: build/tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "test", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["pytest runner `unit`"]
+
+
+def test_test_all_selection_runs_all_configured_runner_kinds(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The explicit all test selection includes python and native runners."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    native-cpp:
+      backend: ctest
+      build_dir: build/tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "test", "all", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == [
+        "pytest runner `unit`",
+        "ctest runner `native-cpp`",
+    ]
+
+
+def test_test_runner_filter_applies_after_kind_selection(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Runner filtering only considers runners from the selected kind."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    integration:
+      backend: tox
+      tox_env: py311
+    native-cpp:
+      backend: ctest
+      build_dir: build/tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("devkit.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(
+        [
+            "--config",
+            str(config),
+            "test",
+            "python",
+            "--runner",
+            "integration",
+            "--dry-run",
+        ]
+    )
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["tox runner `integration`"]
+
+
+def test_validate_accepts_example_style_profile_overrides_without_backend(
+    tmp_path: Path, capsys
+) -> None:
+    """Validation ignores profile-only build or test fragments without backend."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+profiles:
+  default:
+    build:
+      native:
+        env:
+          OpenMP_ROOT: /opt/homebrew/opt/libomp
+    test:
+      runners:
+        native-cpp:
+          env:
+            OpenMP_ROOT: /opt/homebrew/opt/libomp
+build:
+  default: all
+  python:
+    backend: python-build
+test:
+  default: all
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "validate"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Configuration valid" in captured.out
+
+
+def test_build_uses_default_selection_error_when_default_kind_is_missing(
+    tmp_path: Path, capsys
+) -> None:
+    """Build reports the default kind when it points to no configured workflow."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  default: native
+  python:
+    backend: python-build
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "build", "--dry-run"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "No native build workflows configured" in captured.err
+
+
+def test_test_uses_default_selection_error_when_default_kind_is_missing(
+    tmp_path: Path, capsys
+) -> None:
+    """Test reports the default kind when it points to no configured workflow."""
+    config = tmp_path / "devkit.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+test:
+  default: native
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "test", "--dry-run"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "No native test workflows configured" in captured.err

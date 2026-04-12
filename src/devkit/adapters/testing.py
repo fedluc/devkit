@@ -33,6 +33,25 @@ def supported_test_backends() -> set[str]:
     return set(TEST_BACKENDS)
 
 
+def test_backend_kind(backend: str) -> str:
+    """Return the logical kind associated with a test backend.
+
+    Args:
+        backend: Registered test backend identifier.
+
+    Returns:
+        Logical test kind used for CLI selection.
+
+    Raises:
+        ConfigError: If the backend name is not registered.
+    """
+
+    try:
+        return TEST_BACKEND_KINDS[backend]
+    except KeyError as exc:
+        raise ConfigError(f"Unsupported test backend: {backend}") from exc
+
+
 def validate_test_backend(config: TestRunnerConfig) -> None:
     """Validate a configured test backend through the registry contract."""
 
@@ -185,4 +204,10 @@ TEST_BACKENDS: dict[str, BackendContract[TestRunnerConfig, None]] = {
         validate=_validate_ctest,
         plan=_ctest_plan,
     ),
+}
+
+TEST_BACKEND_KINDS: dict[str, str] = {
+    "pytest": "python",
+    "tox": "python",
+    "ctest": "native",
 }

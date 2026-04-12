@@ -27,6 +27,7 @@ profiles:
             - -DUSE_MPI=ON
 
 build:
+  default: all
   native:
     backend: cmake
     source_dir: src/qupled/native/src
@@ -36,12 +37,12 @@ build:
       - -DUSE_MPI=OFF
   python:
     backend: python-build
-    command: ["python3", "-m", "build"]
     env:
       BUILD_NATIVE_TESTS: "OFF"
       USE_MPI: "OFF"
 
 test:
+  default: all
   runners:
     unit:
       backend: pytest
