@@ -55,12 +55,12 @@ test:
 Typical commands:
 
 ```bash
-foga validate
-foga inspect
-foga build
-foga test
-foga build --dry-run
-foga test python --runner unit
+foga validate                    # Check that foga.yml is well-formed
+foga inspect                     # Print the resolved configuration
+foga build                       # Run all configured build workflows
+foga test                        # Run all configured test workflows
+foga build --dry-run             # Show planned build commands without executing
+foga test python --runner unit   # Run only the Python test runner named "unit"
 ```
 
 ## End-To-End Workflow
@@ -332,8 +332,8 @@ hook.
 Use `foga validate` to catch malformed config early:
 
 ```bash
-foga validate
-foga --config path/to/foga.yml validate
+foga validate                              # Validate the default ./foga.yml
+foga --config path/to/foga.yml validate    # Validate a specific config file
 ```
 
 This is the first command to run after editing the configuration.
@@ -343,11 +343,11 @@ This is the first command to run after editing the configuration.
 Use `foga build` to run configured build workflows:
 
 ```bash
-foga build
-foga build python
-foga build native --target native_tests
-foga build all --profile mpi
-foga build --dry-run
+foga build                                # Run all configured build workflows
+foga build python                         # Run only the Python package build
+foga build native --target native_tests   # Build one native target explicitly
+foga build all --profile mpi              # Build with the mpi profile applied
+foga build --dry-run                      # Print the planned build commands
 ```
 
 ### Test
@@ -355,10 +355,10 @@ foga build --dry-run
 Use `foga test` to run one or more configured test runners:
 
 ```bash
-foga test
-foga test python --runner unit
-foga test native
-foga test --profile mpi --dry-run
+foga test                            # Run all configured test workflows
+foga test python --runner unit       # Run only the Python runner named "unit"
+foga test native                     # Run only native test workflows
+foga test --profile mpi --dry-run    # Preview test commands with the mpi profile
 ```
 
 ### Deploy
@@ -366,8 +366,8 @@ foga test --profile mpi --dry-run
 Use `foga deploy` to run deployment targets:
 
 ```bash
-foga deploy --target pypi
-foga deploy --profile release --dry-run
+foga deploy --target pypi                  # Upload only the pypi target
+foga deploy --profile release --dry-run    # Preview release deployment commands
 ```
 
 ### Clean
@@ -384,12 +384,12 @@ Use `foga inspect` to print the resolved configuration without executing
 commands:
 
 ```bash
-foga inspect
-foga inspect --profile mpi
-foga inspect build native --target native_tests
-foga inspect test python --runner unit
-foga inspect deploy --target pypi
-foga inspect --full build native
+foga inspect                                     # Print the full resolved config
+foga inspect --profile mpi                       # Inspect after applying mpi
+foga inspect build native --target native_tests  # Inspect native build selection
+foga inspect test python --runner unit           # Inspect the selected test runner
+foga inspect deploy --target pypi                # Inspect one deploy target
+foga inspect --full build native                 # Show the full document for build
 ```
 
 Top-level `foga inspect` prints the full resolved config. Command-specific
