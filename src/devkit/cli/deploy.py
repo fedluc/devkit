@@ -8,7 +8,8 @@ from typing import Annotated
 import typer
 
 from ..adapters.deploy import plan_deploy
-from ..config import DevkitConfig, load_config
+from ..config.loading import load_config
+from ..config.models import DevkitConfig
 from ..errors import ConfigError
 from ..executor import CommandExecutor
 from .common import config_path_from_context, select_named_items

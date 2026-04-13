@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..config import HookConfig
+from ..config.models import HookConfig
 from ..executor import CommandSpec
 
 

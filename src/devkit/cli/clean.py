@@ -8,7 +8,8 @@ from typing import Annotated
 
 import typer
 
-from ..config import DevkitConfig, load_config
+from ..config.loading import load_config
+from ..config.models import DevkitConfig
 from ..output import format_clean_action, format_clean_summary
 from .common import config_path_from_context
 

@@ -6,18 +6,25 @@ from enum import Enum
 
 import typer
 
+from ..config.constants import (
+    ALL_WORKFLOW_SELECTION,
+    NATIVE_WORKFLOW_KIND,
+    PYTHON_WORKFLOW_KIND,
+)
 from ..errors import ConfigError
 
 
 class WorkflowSelection(str, Enum):
     """Supported workflow selection values exposed by the CLI."""
 
-    NATIVE = "native"
-    PYTHON = "python"
-    ALL = "all"
+    NATIVE = NATIVE_WORKFLOW_KIND
+    PYTHON = PYTHON_WORKFLOW_KIND
+    ALL = ALL_WORKFLOW_SELECTION
 
 
-WORKFLOW_SELECTION_METAVAR = "native|python|all"
+WORKFLOW_SELECTION_METAVAR = (
+    f"{NATIVE_WORKFLOW_KIND}|{PYTHON_WORKFLOW_KIND}|{ALL_WORKFLOW_SELECTION}"
+)
 
 
 def selection_value(selection: WorkflowSelection | None) -> str | None:

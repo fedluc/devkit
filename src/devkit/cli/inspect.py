@@ -11,7 +11,14 @@ from typing import Annotated
 import typer
 import yaml
 
-from ..config import DevkitConfig, build_kind, deep_copy_mapping, load_config
+from ..config.constants import (
+    ALL_WORKFLOW_SELECTION,
+    NATIVE_WORKFLOW_KIND,
+    PYTHON_WORKFLOW_KIND,
+)
+from ..config.loading import load_config
+from ..config.merge import deep_copy_mapping
+from ..config.models import DevkitConfig, build_kind
 from ..errors import ConfigError
 from ..output import style, supports_color
 from .common import (
@@ -248,7 +255,7 @@ def _validate_build_target_override(config: DevkitConfig, args: InspectArgs) -> 
     if (
         args.inspect_command == "build"
         and args.targets
-        and config.build.selected_kinds(args.selection) == ["python"]
+        and config.build.selected_kinds(args.selection) == [PYTHON_WORKFLOW_KIND]
     ):
         raise ConfigError(
             "`inspect build --target` can only be used with native builds"
@@ -293,11 +300,11 @@ def _build_build_context(config: DevkitConfig, args: InspectArgs) -> dict[str, o
     effective_targets = {
         name: list(args.targets) if args.targets else config.build.entries[name].targets
         for name in selected_entries
-        if build_kind(config.build.entries[name]) == "native"
+        if build_kind(config.build.entries[name]) == NATIVE_WORKFLOW_KIND
     }
     summary: dict[str, object] = {
         "command": "build",
-        "selection": args.selection or config.build.default or "all",
+        "selection": args.selection or config.build.default or ALL_WORKFLOW_SELECTION,
     }
     if _should_include_build_entries(selected_entries, summary["selection"]):
         summary["entries"] = selected_entries
@@ -323,7 +330,7 @@ def _build_test_context(config: DevkitConfig, args: InspectArgs) -> dict[str, ob
     )
     return {
         "command": "test",
-        "selection": args.selection or config.tests.default or "all",
+        "selection": args.selection or config.tests.default or ALL_WORKFLOW_SELECTION,
         "runners": list(selected_runners),
     }
 
@@ -399,7 +406,7 @@ def _build_resolved_config(
     active_kinds = set(config.build.selected_kinds(args.selection))
     for name, build_config in config.build.entries.items():
         if (
-            build_kind(build_config) != "native"
+            build_kind(build_config) != NATIVE_WORKFLOW_KIND
             or build_kind(build_config) not in active_kinds
         ):
             continue

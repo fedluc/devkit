@@ -4,17 +4,24 @@ from pathlib import Path
 
 import pytest
 
-from devkit import config as cfg
 from devkit.adapters.build import plan_build
 from devkit.adapters.deploy import plan_deploy
 from devkit.adapters.testing import plan_tests
+from devkit.config.models import (
+    BuildConfig,
+    DeployTargetConfig,
+    HookConfig,
+    NativeBuildConfig,
+    PythonBuildConfig,
+    TestRunnerConfig,
+)
 from devkit.errors import ConfigError
 
 
 def test_plan_build_generates_cmake_and_python_commands() -> None:
     """Build planning includes native and Python commands in order."""
-    config = cfg.BuildConfig(
-        native=cfg.NativeBuildConfig(
+    config = BuildConfig(
+        native=NativeBuildConfig(
             backend="cmake",
             source_dir="src/native",
             build_dir="build/native",
@@ -23,9 +30,9 @@ def test_plan_build_generates_cmake_and_python_commands() -> None:
             build_args=["--verbose"],
             targets=["native_tests"],
             env={"CC": "clang"},
-            hooks=cfg.HookConfig(pre=[["echo", "prep"]]),
+            hooks=HookConfig(pre=[["echo", "prep"]]),
         ),
-        python=cfg.PythonBuildConfig(
+        python=PythonBuildConfig(
             backend="python-build",
             args=["--wheel"],
         ),
@@ -58,13 +65,13 @@ def test_plan_build_generates_cmake_and_python_commands() -> None:
 
 def test_plan_build_returns_registered_backend_specs_in_order() -> None:
     """Build planning uses the registered backend contracts in config order."""
-    config = cfg.BuildConfig(
-        native=cfg.NativeBuildConfig(
+    config = BuildConfig(
+        native=NativeBuildConfig(
             backend="cmake",
             source_dir="src/native",
             build_dir="build/native",
         ),
-        python=cfg.PythonBuildConfig(
+        python=PythonBuildConfig(
             backend="python-build",
             args=["--wheel"],
         ),
@@ -81,14 +88,14 @@ def test_plan_build_returns_registered_backend_specs_in_order() -> None:
 
 def test_plan_build_can_select_only_python_backends() -> None:
     """Build planning can narrow execution to Python workflows."""
-    config = cfg.BuildConfig(
+    config = BuildConfig(
         entries={
-            "native": cfg.NativeBuildConfig(
+            "native": NativeBuildConfig(
                 backend="cmake",
                 source_dir="src/native",
                 build_dir="build/native",
             ),
-            "wheel": cfg.PythonBuildConfig(
+            "wheel": PythonBuildConfig(
                 backend="python-build",
                 args=["--wheel"],
             ),
@@ -102,7 +109,7 @@ def test_plan_build_can_select_only_python_backends() -> None:
 
 def test_plan_tests_ctest_runner_can_prepare_target_before_running() -> None:
     """ctest runners can configure and build before executing tests."""
-    runner = cfg.TestRunnerConfig(
+    runner = TestRunnerConfig(
         name="native",
         backend="ctest",
         source_dir="src/native",
@@ -144,7 +151,7 @@ def test_plan_deploy_resolves_matching_artifacts(tmp_path: Path) -> None:
     wheel = dist / "demo-0.1.0-py3-none-any.whl"
     wheel.write_text("artifact", encoding="utf-8")
 
-    target = cfg.DeployTargetConfig(
+    target = DeployTargetConfig(
         name="pypi",
         backend="twine",
         artifacts=["dist/*"],
@@ -165,8 +172,8 @@ def test_plan_deploy_resolves_matching_artifacts(tmp_path: Path) -> None:
 def test_plan_tests_combines_selected_runner_contracts() -> None:
     """Test planning combines multiple registered runner backends."""
     runners = [
-        cfg.TestRunnerConfig(name="unit", backend="pytest", path="tests/unit"),
-        cfg.TestRunnerConfig(name="integration", backend="tox", tox_env="py311"),
+        TestRunnerConfig(name="unit", backend="pytest", path="tests/unit"),
+        TestRunnerConfig(name="integration", backend="tox", tox_env="py311"),
     ]
 
     plan = plan_tests(runners)
@@ -179,7 +186,7 @@ def test_plan_tests_combines_selected_runner_contracts() -> None:
 
 def test_plan_deploy_fails_when_no_artifacts_found(tmp_path: Path) -> None:
     """Deploy planning fails when artifact globs match nothing."""
-    target = cfg.DeployTargetConfig(
+    target = DeployTargetConfig(
         name="pypi",
         backend="twine",
         artifacts=["dist/*"],
@@ -199,13 +206,13 @@ def test_plan_deploy_combines_multiple_targets(tmp_path: Path) -> None:
     second.write_text("sdist", encoding="utf-8")
 
     targets = [
-        cfg.DeployTargetConfig(
+        DeployTargetConfig(
             name="testpypi",
             backend="twine",
             artifacts=["dist/*.whl"],
             repository="testpypi",
         ),
-        cfg.DeployTargetConfig(
+        DeployTargetConfig(
             name="release",
             backend="twine",
             artifacts=["dist/*.tar.gz"],

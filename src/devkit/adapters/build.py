@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ..config import BuildConfig, NativeBuildConfig, PythonBuildConfig
+from ..config.constants import NATIVE_WORKFLOW_KIND
+from ..config.models import BuildConfig, NativeBuildConfig, PythonBuildConfig
 from ..errors import ConfigError
 from ..executor import CommandSpec
 from .common import split_hooks
@@ -98,7 +99,7 @@ def _cmake_plan(config: NativeBuildConfig, request: BuildRequest) -> list[Comman
     Returns:
         Command specs for the configure step and one or more build steps.
     """
-    pre_hooks, post_hooks = split_hooks(config.hooks, "native")
+    pre_hooks, post_hooks = split_hooks(config.hooks, NATIVE_WORKFLOW_KIND)
     command = [
         "cmake",
         "-S",

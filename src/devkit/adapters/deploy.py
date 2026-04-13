@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..config import DeployTargetConfig
+from ..config.models import DeployTargetConfig
 from ..errors import ConfigError
 from ..executor import CommandSpec
 from .common import split_hooks

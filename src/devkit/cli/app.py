@@ -8,6 +8,7 @@ from typing import Annotated
 import click
 import typer
 
+from ..config.constants import DEFAULT_CONFIG_FILENAME
 from ..errors import DevkitError
 from ..output import format_error
 from .build import build_command
@@ -40,7 +41,7 @@ def main_callback(
             "--config",
             help="Path to the devkit YAML configuration file to load.",
         ),
-    ] = "devkit.yml",
+    ] = DEFAULT_CONFIG_FILENAME,
 ) -> None:
     """Initialize shared CLI context and render root help when needed."""
     ctx.obj = config

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from devkit.config import load_config
+from devkit.config.loading import load_config
 from devkit.errors import ConfigError
 
 

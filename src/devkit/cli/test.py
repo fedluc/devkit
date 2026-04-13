@@ -8,7 +8,13 @@ from typing import Annotated
 import typer
 
 from ..adapters.testing import plan_tests
-from ..config import DevkitConfig, load_config
+from ..config.constants import (
+    ALL_WORKFLOW_SELECTION,
+    NATIVE_WORKFLOW_KIND,
+    PYTHON_WORKFLOW_KIND,
+)
+from ..config.loading import load_config
+from ..config.models import DevkitConfig
 from ..errors import ConfigError
 from ..executor import CommandExecutor
 from .common import (
@@ -41,7 +47,11 @@ def test_command(
     selection: Annotated[
         WorkflowSelection | None,
         typer.Argument(
-            help="Run only the selected test kind: native, python, or all.",
+            help=(
+                "Run only the selected test kind: "
+                f"{NATIVE_WORKFLOW_KIND}, {PYTHON_WORKFLOW_KIND}, "
+                f"or {ALL_WORKFLOW_SELECTION}."
+            ),
             metavar=WORKFLOW_SELECTION_METAVAR,
         ),
     ] = None,
@@ -78,7 +88,7 @@ def run_test(config: DevkitConfig, executor: CommandExecutor, args: TestArgs) ->
     selected = select_named_items(selected_by_kind, args.runner, "test runner")
     plan = plan_tests(list(selected.values()))
     if not plan.specs:
-        if resolved_selection and resolved_selection != "all":
+        if resolved_selection and resolved_selection != ALL_WORKFLOW_SELECTION:
             raise ConfigError(f"No {resolved_selection} test workflows configured")
         raise ConfigError("No test workflows configured")
     executor.run_specs(plan.specs, dry_run=args.dry_run)

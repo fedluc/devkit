@@ -8,7 +8,13 @@ from typing import Annotated
 import typer
 
 from ..adapters.build import plan_build
-from ..config import DevkitConfig, load_config
+from ..config.constants import (
+    ALL_WORKFLOW_SELECTION,
+    NATIVE_WORKFLOW_KIND,
+    PYTHON_WORKFLOW_KIND,
+)
+from ..config.loading import load_config
+from ..config.models import DevkitConfig
 from ..errors import ConfigError
 from ..executor import CommandExecutor
 from .common import (
@@ -40,7 +46,11 @@ def build_command(
     selection: Annotated[
         WorkflowSelection | None,
         typer.Argument(
-            help="Run only the selected build kind: native, python, or all.",
+            help=(
+                "Run only the selected build kind: "
+                f"{NATIVE_WORKFLOW_KIND}, {PYTHON_WORKFLOW_KIND}, "
+                f"or {ALL_WORKFLOW_SELECTION}."
+            ),
             metavar=WORKFLOW_SELECTION_METAVAR,
         ),
     ] = None,
@@ -77,12 +87,14 @@ def run_build(config: DevkitConfig, executor: CommandExecutor, args: BuildArgs) 
     """Execute configured build workflows."""
     resolved_selection = args.selection or config.build.default
 
-    if args.targets and config.build.selected_kinds(args.selection) == ["python"]:
+    if args.targets and config.build.selected_kinds(args.selection) == [
+        PYTHON_WORKFLOW_KIND
+    ]:
         raise ConfigError("`build --target` can only be used with native builds")
 
     plan = plan_build(config.build, selection=args.selection, targets=args.targets)
     if not plan.specs:
-        if resolved_selection and resolved_selection != "all":
+        if resolved_selection and resolved_selection != ALL_WORKFLOW_SELECTION:
             raise ConfigError(f"No {resolved_selection} build workflows configured")
         raise ConfigError("No build workflows configured")
     executor.run_specs(plan.specs, dry_run=args.dry_run)
