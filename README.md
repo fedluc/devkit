@@ -1,104 +1,112 @@
 # foga
 
 `foga` is a Python package and CLI for developers maintaining Python packages
-with native C or C++ bindings. It centralizes build, test, deploy, and cleanup
-workflows behind a single YAML configuration file.
+with native C or C++ bindings. It replaces ad-hoc repository scripts with a
+single YAML configuration file that drives build, test, deploy, inspect, and
+cleanup workflows.
 
-## Status
+## What foga does
 
-This repository contains the first implementation pass with:
+`foga` gives a project one entrypoint for the common tasks that usually end up
+split across Makefiles, shell scripts, CI snippets, and README notes:
 
-- YAML configuration via `foga.yml`
-- Profile-based overrides
-- Built-in adapters for CMake, `python -m build`, `pytest`, `tox`, `ctest`, and
-  Twine uploads
-- CLI commands for `build`, `test`, `deploy`, `clean`, `validate`, and
-  `inspect`
+- build Python packages and native artifacts from one config file
+- run Python and native test workflows through one CLI
+- switch environment-specific settings with named profiles
+- inspect the resolved config before running anything
+- keep escape hatches explicit through structured hooks
 
-## Quick Start
+The repository includes a full example in
+[`examples/qupled/foga.yml`](examples/qupled/foga.yml).
 
-1. Install the package in editable mode:
+## Installation
+
+Install `foga` in editable mode while developing this repository:
 
 ```bash
 pip install -e .[dev]
 ```
 
-2. Lint the code during development:
+For day-to-day validation of changes in this repository, the standard checks
+are:
 
 ```bash
 ruff check .
+pytest
+python -m build
 ```
 
-3. Add a `foga.yml` file to your project.
+## Quick Start
 
-4. Run commands such as:
+1. Add a root-level `foga.yml` file to your project.
+2. Start with a minimal configuration.
+3. Validate it.
+4. Inspect the resolved config.
+5. Run build or test workflows.
 
-```bash
-foga validate
-foga inspect --profile mpi
-foga inspect build native --target native_tests
-foga inspect build --full native --target native_tests
-foga build python
-foga build all --profile mpi
-foga test native
-foga test python --runner unit
-foga deploy --profile release --dry-run
-```
-
-See [`examples/qupled/foga.yml`](examples/qupled/foga.yml) for a concrete
-configuration derived from the current `qupled` workflow.
-
-## Hooks And Escape Hatches
-
-`foga` supports command hooks as a narrow escape hatch around built-in
-workflows. Hooks are intentionally limited: each hook entry must be a command
-array, and `foga` executes that array directly without shell parsing.
+Minimal example:
 
 ```yaml
+project:
+  name: demo
+
 build:
   python:
     backend: python-build
-    hooks:
-      pre:
-        - ["python3", "tools/prepare_build.py"]
-      post:
-        - ["python3", "tools/cleanup_build.py"]
+
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
 ```
 
-Supported boundaries:
+Typical commands:
 
-- `hooks.pre` and `hooks.post` are the only supported hook phases
-- each hook command must be expressed as `["tool", "arg"]`
-- hooks run before or after the generated workflow command for that backend
+```bash
+foga validate
+foga inspect
+foga build
+foga test
+foga build --dry-run
+foga test python --runner unit
+```
 
-Intentionally unsupported:
+## End-To-End Workflow
 
-- raw shell strings such as `make build && make test`
-- per-hook mappings such as `argv`, `shell`, `cwd`, or inline environment overrides
+The usual workflow for adopting `foga` in a repository is:
 
-If a workflow needs complex orchestration, keep that logic in a project script
-or tool and call it from a structured hook command instead of embedding shell
-logic into `foga.yml`.
+1. Create `foga.yml` with your project name and at least one build or test
+   workflow.
+2. Run `foga validate` until the configuration passes.
+3. Run `foga inspect` to check the merged effective config.
+4. Use `foga build --dry-run`, `foga test --dry-run`, or
+   `foga deploy --dry-run` to inspect generated commands before execution.
+5. Run the real command once the plan looks right.
+6. Add profiles only after the base config is working.
 
-## Override Precedence
+That sequence keeps adoption incremental. You do not need to encode every
+project script on day one.
 
-`foga` applies configuration in this order:
+## Configuration Layout
 
-1. Base `foga.yml`
-2. Selected profile overrides from `profiles.<name>`
-3. CLI overrides for the active command
+`foga` expects a root-level YAML mapping. The main top-level sections are:
 
-Current CLI overrides are execution-scoped rather than persistent config
-rewrites: `build python|native|all` and `test python|native|all` select the
-workflow kind for that invocation, `build --target` overrides configured native
-build targets, while `test --runner` and `deploy --target` narrow the selected
-configured workflows after profile application.
+- `project`: required project metadata
+- `build`: build workflows
+- `test`: test workflows
+- `deploy`: deployment workflows
+- `clean`: cleanup targets
+- `profiles`: named overrides applied on top of the base config
 
-You can also define defaults in configuration:
+Example shape:
 
 ```yaml
+project:
+  name: demo
+
 build:
-  default: python
+  default: all
   native:
     backend: cmake
     source_dir: cpp
@@ -107,66 +115,369 @@ build:
     backend: python-build
 
 test:
-  default: native
+  default: python
   runners:
     unit:
       backend: pytest
       path: tests
-    native-cpp:
-      backend: ctest
-      build_dir: build/tests
+
+deploy:
+  targets:
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+
+clean:
+  paths: ["build", "dist"]
+
+profiles:
+  release:
+    build:
+      python:
+        args: ["--wheel"]
 ```
 
-When omitted, `foga build` and `foga test` still run all configured
-workflows for backward compatibility.
+### Project
 
-Profile overrides are validated before merge. They may override existing values
-and extend nested mappings, but they must preserve container shape for existing
-paths and cannot change the backend identifier of an already configured build,
-test, or deploy entry.
+`project.name` is required and identifies the configured project in validation
+output.
 
-## Inspecting Resolved Configuration
+### Build
 
-Use `foga inspect` to print the effective YAML configuration after profile
-selection, without executing any workflow:
+`build` defines up to two workflow kinds:
+
+- `build.native` for native build tooling
+- `build.python` for Python package builds
+
+`build.default` may be `native`, `python`, or `all`.
+
+When `build.default` is omitted, `foga build` runs all configured build kinds
+for backward compatibility.
+
+### Test
+
+`test.runners` is a mapping keyed by runner name. Each runner chooses a backend
+such as `pytest`, `tox`, or `ctest`.
+
+`test.default` may be `native`, `python`, or `all`.
+
+### Deploy
+
+`deploy.targets` is a mapping keyed by target name. Each target currently uses
+the `twine` backend to upload matched artifacts.
+
+### Clean
+
+`clean.paths` is a simple list of repository-relative paths that `foga clean`
+removes.
+
+## Supported Backends
+
+### Build backends
+
+#### `cmake`
+
+`build.native.backend: cmake` supports:
+
+- `source_dir`
+- `build_dir`
+- `generator`
+- `configure_args`
+- `build_args`
+- `targets`
+- `env`
+- `hooks`
+
+It generates a configure step and one or more `cmake --build` steps.
+
+#### `python-build`
+
+`build.python.backend: python-build` runs `python3 -m build` with optional
+extra `args`, plus optional `env` and `hooks`.
+
+`foga` intentionally does not allow overriding the full build command for this
+backend. Use `args` for extra flags.
+
+### Test backends
+
+#### `pytest`
+
+Supports:
+
+- `path`
+- `marker`
+- `args`
+- `env`
+- `hooks`
+
+#### `tox`
+
+Supports:
+
+- `tox_env`
+- `args`
+- `env`
+- `hooks`
+
+#### `ctest`
+
+Supports:
+
+- `source_dir`
+- `build_dir`
+- `generator`
+- `configure_args`
+- `build_args`
+- `target`
+- `args`
+- `env`
+- `hooks`
+
+This backend can configure and build native tests before running `ctest`.
+
+### Deploy backends
+
+#### `twine`
+
+Supports:
+
+- `artifacts`
+- `repository`
+- `repository_url`
+- `args`
+- `env`
+- `hooks`
+
+## Profiles
+
+Profiles let one repository express environment-specific differences without
+copying the entire config. Apply them with `--profile <name>`.
+
+Example:
+
+```yaml
+profiles:
+  mpi:
+    build:
+      native:
+        configure_args:
+          - -DBUILD_NATIVE_TESTS=OFF
+          - -DUSE_MPI=ON
+      python:
+        env:
+          USE_MPI: "ON"
+```
+
+Use profiles for:
+
+- CI versus local development
+- MPI versus non-MPI builds
+- platform-specific environment variables
+- release-only deployment settings
+
+Profile merge rules are intentionally conservative:
+
+- profile overrides may replace values and extend nested mappings
+- they must preserve the container type of existing paths
+- they cannot change the backend identifier of an already configured workflow
+
+## Hooks And Escape Hatches
+
+Hooks are the supported escape hatch when a workflow needs a small amount of
+custom orchestration around a built-in backend command.
+
+Hook shape:
+
+```yaml
+test:
+  runners:
+    integration:
+      backend: pytest
+      path: tests
+      hooks:
+        pre:
+          - ["python3", "tools/prepare_integration.py"]
+        post:
+          - ["python3", "tools/cleanup_integration.py"]
+```
+
+Supported behavior:
+
+- only `hooks.pre` and `hooks.post` are supported
+- each hook entry must be a non-empty command array
+- hooks run directly without shell parsing
+- hooks execute around the generated backend command
+
+Intentionally unsupported:
+
+- shell strings such as `"make build && make test"`
+- per-hook mappings such as `cwd`, `shell`, `argv`, or inline `env`
+- turning the config file into a generic task runner
+
+If logic is complex, keep it in a project script and call that script from a
+hook.
+
+## Command Guide
+
+### Validate
+
+Use `foga validate` to catch malformed config early:
+
+```bash
+foga validate
+foga --config path/to/foga.yml validate
+```
+
+This is the first command to run after editing the configuration.
+
+### Build
+
+Use `foga build` to run configured build workflows:
+
+```bash
+foga build
+foga build python
+foga build native --target native_tests
+foga build all --profile mpi
+foga build --dry-run
+```
+
+### Test
+
+Use `foga test` to run one or more configured test runners:
+
+```bash
+foga test
+foga test python --runner unit
+foga test native
+foga test --profile mpi --dry-run
+```
+
+### Deploy
+
+Use `foga deploy` to run deployment targets:
+
+```bash
+foga deploy --target pypi
+foga deploy --profile release --dry-run
+```
+
+### Clean
+
+Use `foga clean` to remove configured generated paths:
+
+```bash
+foga clean
+```
+
+### Inspect
+
+Use `foga inspect` to print the resolved configuration without executing
+commands:
 
 ```bash
 foga inspect
 foga inspect --profile mpi
 foga inspect build native --target native_tests
-foga inspect build --full native --target native_tests
 foga inspect test python --runner unit
 foga inspect deploy --target pypi
+foga inspect --full build native
 ```
 
-Top-level `foga inspect` still prints the full resolved configuration. The
-command-specific variants default to a concise summary plus the relevant config
-fragment for the selected build, test, or deploy scope. Add `--full` to any
-command-specific inspect invocation to print the full resolved configuration
-document instead.
+Top-level `foga inspect` prints the full resolved config. Command-specific
+inspection prints a concise summary plus the relevant config fragment unless
+`--full` is set.
 
-The concise command-specific output includes:
+## Dry-Run Usage
 
-- `active_profile` to show which profile was applied, if any
-- `summary` to show the active inspect mode with direct fields such as
-  `selection`, `targets`, or `runners`
-- `effective_config` to show only the relevant config fragment for the selected
-  build, test, or deploy scope
+Dry-run mode is the safest way to adopt `foga` in an existing repository.
 
-When run in an interactive terminal, inspect output is colorized for easier
-scanning. Non-interactive output stays plain YAML so it remains easy to pipe or
-parse.
+Available dry-run commands:
 
-With `--full`, the output includes:
+- `foga build --dry-run`
+- `foga test --dry-run`
+- `foga deploy --dry-run`
 
-- `context` to show the active inspect mode and selected runners or targets
-- `resolved_config` to show the merged configuration document, including active
-  build target overrides when provided to `inspect build`
+Dry-run output shows the planned commands without executing them. Use it to
+verify:
+
+- the selected profile
+- target or runner filtering
+- generated backend arguments
+- hook ordering
+- working assumptions before changing CI or repository scripts
+
+## Override Precedence
+
+`foga` resolves configuration in this order:
+
+1. Base `foga.yml`
+2. Selected profile overrides from `profiles.<name>`
+3. CLI overrides for the active command
+
+CLI overrides are execution-scoped. They do not rewrite the config file.
+
+Examples:
+
+- `foga build python` changes the build selection for one invocation
+- `foga test native` changes the test selection for one invocation
+- `foga build --target native_tests` overrides configured native targets
+- `foga test --runner unit` narrows the selected runners
+- `foga deploy --target pypi` narrows the selected deploy targets
+
+## Migration From Repo-Specific Scripts
+
+Repositories adopting `foga` usually already have shell scripts, Make targets,
+or CI snippets for build and test commands. The migration goal is not to delete
+everything immediately. Start by moving the stable workflow definition into
+`foga.yml`.
+
+Suggested migration path:
+
+1. Inventory the commands your repository already uses for build, test, deploy,
+   and cleanup.
+2. Map each stable workflow to a built-in backend first:
+   `python -m build` -> `python-build`, `pytest` -> `pytest`,
+   `tox -e <env>` -> `tox`, `cmake` or `ctest` -> native backends.
+3. Keep repo-specific scripts only for logic that is genuinely project-specific.
+4. Wrap small prep or cleanup steps with hooks instead of copying full shell
+   scripts into YAML.
+5. Replace CI shell fragments with `foga` commands once dry-run output and
+   local execution are stable.
+6. Remove obsolete scripts only after the `foga` workflow is trusted.
+
+Concrete before-and-after examples:
+
+- `scripts/build_wheel.sh` that only runs `python -m build` usually becomes
+  `build.python.backend: python-build`
+- `scripts/test_unit.sh` that only wraps `pytest tests -m unit -v` usually
+  becomes a named `pytest` runner with `path`, `marker`, and `args`
+- platform-specific environment setup usually belongs in a profile
+- a short docs-copy step around integration tests usually belongs in hooks
+
+Good candidates to keep outside `foga`:
+
+- long project bootstrap flows
+- commands that provision external infrastructure
+- heavy orchestration that is better expressed in Python or shell than YAML
+
+## Example Config
+
+[`examples/qupled/foga.yml`](examples/qupled/foga.yml) demonstrates:
+
+- both native and Python build workflows
+- multiple named test runners
+- pre/post hooks for integration tests
+- MPI and platform-specific profiles
+
+Use it as a reference when authoring a new config, but keep your own config as
+small as possible at first.
 
 ## Devcontainer
 
-The repository includes a devcontainer in [`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json).
-When opened in a compatible environment, it installs:
+The repository includes a devcontainer in
+[`.devcontainer/devcontainer.json`](.devcontainer/devcontainer.json). When
+opened in a compatible environment, it installs:
 
 - Python 3.11
 - `foga` in editable mode with the `dev` extra, including `ruff`
