@@ -92,3 +92,11 @@ the `twine` backend to upload matched artifacts.
 removes.
 
 `clean` is optional.
+
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+backends
+profiles-and-hooks
+```

@@ -23,6 +23,17 @@ split across Makefiles, shell scripts, CI snippets, and README notes:
 - Looking for concrete reference configs: read [Examples](examples/index.md)
 - Working on this repository: read [Development](development.md)
 
+```{toctree}
+:maxdepth: 2
+:hidden:
+
+getting-started
+configuration/index
+cli
+examples/index
+development
+```
+
 ## Example projects
 
 The repository includes example configurations derived from real projects:

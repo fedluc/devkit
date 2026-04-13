@@ -21,8 +21,9 @@ test = [
     "pytest>=8.0",
 ]
 docs = [
-    "mkdocs-material>=9.6",
-    "mkdocs>=1.6",
+    "furo>=2024.8.6",
+    "myst-parser>=4.0",
+    "sphinx>=8.0",
 ]
 dev = [
     "build>=1.2",

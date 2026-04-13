@@ -66,5 +66,5 @@ pip install -e .[dev,docs]
 ruff check .
 pytest
 python -m build
-mkdocs build --strict
+sphinx-build -W --keep-going -b html docs docs/_build/html
 ```
