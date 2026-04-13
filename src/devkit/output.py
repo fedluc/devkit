@@ -6,6 +6,7 @@ import os
 import sys
 from typing import TextIO
 
+from .config.constants import DEFAULT_CONFIG_FILENAME
 from .errors import ConfigError, DevkitError, ExecutionError
 
 RESET = "\033[0m"
@@ -94,7 +95,10 @@ def format_error(exc: DevkitError, *, stream: TextIO | None = None) -> str:
     resolved = _stream_or_default(stream, sys.stderr)
     if isinstance(exc, ConfigError):
         title = "Configuration error"
-        hint = exc.hint or "Update `devkit.yml` and rerun `devkit validate`."
+        hint = (
+            exc.hint
+            or f"Update `{DEFAULT_CONFIG_FILENAME}` and rerun `devkit validate`."
+        )
     elif isinstance(exc, ExecutionError):
         title = "Execution failed"
         hint = (

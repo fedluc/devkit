@@ -12,7 +12,16 @@ from .models import HookConfig
 def reject_unknown_keys(
     data: dict[str, Any], section: str, allowed_keys: set[str]
 ) -> None:
-    """Reject unexpected keys in a top-level config section."""
+    """Reject unexpected keys in a top-level config section.
+
+    Args:
+        data: Raw section mapping to validate.
+        section: Top-level section name used in the error message.
+        allowed_keys: Accepted keys for the section.
+
+    Raises:
+        ConfigError: If the section contains unsupported keys.
+    """
 
     for key in data:
         if key in allowed_keys:

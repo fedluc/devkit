@@ -7,7 +7,7 @@ from typing import Any
 from ..errors import ConfigError
 
 
-def _apply_profile(data: dict[str, Any], profile: str | None) -> dict[str, Any]:
+def apply_profile(data: dict[str, Any], profile: str | None) -> dict[str, Any]:
     """Merge an optional named profile into the base configuration.
 
     Args:

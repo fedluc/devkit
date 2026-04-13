@@ -7,18 +7,19 @@ from pathlib import Path
 import yaml
 
 from ..errors import ConfigError
-from .merge import _apply_profile
+from .constants import DEFAULT_CONFIG_FILENAME
+from .merge import apply_profile
 from .models import DevkitConfig
 from .parsing import _parse_config
 
 
 def load_config(
-    config_path: str | Path = "devkit.yml", profile: str | None = None
+    config_path: str | Path = DEFAULT_CONFIG_FILENAME, profile: str | None = None
 ) -> DevkitConfig:
     """Load, merge, and validate a devkit configuration file.
 
     Args:
-        config_path: Path to the ``devkit.yml`` file.
+        config_path: Path to the ``DEFAULT_CONFIG_FILENAME`` file.
         profile: Optional profile to merge into the base configuration.
 
     Returns:
@@ -51,10 +52,10 @@ def load_config(
             "configuration root must be a mapping",
             details={"File": str(path)},
             hint=(
-                "Start `devkit.yml` with a top-level mapping such as "
+                f"Start `{DEFAULT_CONFIG_FILENAME}` with a top-level mapping such as "
                 "`project:`, `build:`, or `test:`."
             ),
         )
 
-    merged = _apply_profile(data, profile)
+    merged = apply_profile(data, profile)
     return _parse_config(merged, path.parent)

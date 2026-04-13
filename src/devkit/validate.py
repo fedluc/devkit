@@ -7,7 +7,8 @@ from pathlib import Path
 
 import yaml
 
-from .config import DevkitConfig, load_config
+from .config.loading import load_config
+from .config.models import DevkitConfig
 from .output import format_detail, format_status
 
 
@@ -24,7 +25,15 @@ class ValidationSummary:
 
 
 def run_validate(config_path: str | Path, profile: str | None) -> int:
-    """Validate the configuration file and print a concise summary."""
+    """Validate the configuration file and print a concise summary.
+
+    Args:
+        config_path: Path to the configuration file to validate.
+        profile: Optional profile name to apply before validation.
+
+    Returns:
+        Process exit code for the validation command.
+    """
     config = load_config(config_path, profile)
     summary = _build_validation_summary(config, config_path, profile)
     print(_format_validation_summary(summary))
@@ -34,7 +43,16 @@ def run_validate(config_path: str | Path, profile: str | None) -> int:
 def _build_validation_summary(
     config: DevkitConfig, config_path: str | Path, requested_profile: str | None
 ) -> ValidationSummary:
-    """Build the success summary for a validated configuration."""
+    """Build the success summary for a validated configuration.
+
+    Args:
+        config: Loaded configuration object.
+        config_path: Path to the configuration file that was validated.
+        requested_profile: Explicit profile name requested by the user.
+
+    Returns:
+        Structured validation summary for display.
+    """
     return ValidationSummary(
         project_name=config.project.name,
         active_profile=_resolve_active_profile_name(config_path, requested_profile),
@@ -46,7 +64,14 @@ def _build_validation_summary(
 
 
 def _format_validation_summary(summary: ValidationSummary) -> str:
-    """Render the validate success summary."""
+    """Render the validate success summary.
+
+    Args:
+        summary: Validation details to display.
+
+    Returns:
+        User-facing summary string.
+    """
     lines = [
         format_status(
             "Validation OK",
@@ -77,7 +102,15 @@ def _format_validation_summary(summary: ValidationSummary) -> str:
 def _resolve_active_profile_name(
     config_path: str | Path, requested_profile: str | None
 ) -> str | None:
-    """Resolve the active profile name for validate output."""
+    """Resolve the active profile name for validate output.
+
+    Args:
+        config_path: Path to the configuration file being validated.
+        requested_profile: Explicit profile name requested by the user.
+
+    Returns:
+        Active profile name, if one can be determined.
+    """
     if requested_profile is not None:
         return requested_profile
 

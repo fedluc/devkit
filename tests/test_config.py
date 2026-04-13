@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from devkit.config import load_config
+from devkit.config.loading import load_config
 from devkit.errors import ConfigError
 
 
@@ -302,10 +302,7 @@ build:
 
     with pytest.raises(
         ConfigError,
-        match=(
-            "Unsupported build backend: python-build. "
-            "Supported backends: cmake"
-        ),
+        match=("Unsupported build backend: python-build. Supported backends: cmake"),
     ):
         load_config(config_path)
 

@@ -10,7 +10,15 @@ from pathlib import Path
 from .adapters.build import plan_build
 from .adapters.deploy import plan_deploy
 from .adapters.testing import plan_tests
-from .config import WORKFLOW_SELECTIONS, DevkitConfig, load_config
+from .config.constants import (
+    ALL_WORKFLOW_SELECTION,
+    DEFAULT_CONFIG_FILENAME,
+    NATIVE_WORKFLOW_KIND,
+    PYTHON_WORKFLOW_KIND,
+    WORKFLOW_SELECTIONS,
+)
+from .config.loading import load_config
+from .config.models import DevkitConfig
 from .errors import ConfigError, DevkitError
 from .executor import CommandExecutor
 from .inspect import add_inspect_parser, run_inspect
@@ -71,7 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--config",
-        default="devkit.yml",
+        default=DEFAULT_CONFIG_FILENAME,
         help="Path to the devkit YAML configuration file to load.",
     )
 
@@ -85,7 +93,11 @@ def build_parser() -> argparse.ArgumentParser:
         "selection",
         nargs="?",
         choices=WORKFLOW_SELECTIONS,
-        help="Run only the selected build kind: native, python, or all.",
+        help=(
+            "Run only the selected build kind: "
+            f"{NATIVE_WORKFLOW_KIND}, {PYTHON_WORKFLOW_KIND}, "
+            f"or {ALL_WORKFLOW_SELECTION}."
+        ),
     )
     build_parser.add_argument(
         "--target",
@@ -105,7 +117,11 @@ def build_parser() -> argparse.ArgumentParser:
         "selection",
         nargs="?",
         choices=WORKFLOW_SELECTIONS,
-        help="Run only the selected test kind: native, python, or all.",
+        help=(
+            "Run only the selected test kind: "
+            f"{NATIVE_WORKFLOW_KIND}, {PYTHON_WORKFLOW_KIND}, "
+            f"or {ALL_WORKFLOW_SELECTION}."
+        ),
     )
     test_parser.add_argument(
         "--runner",
@@ -180,12 +196,14 @@ def _run_build(
     """
     resolved_selection = args.selection or config.build.default
 
-    if args.targets and config.build.selected_kinds(args.selection) == ["python"]:
+    if args.targets and config.build.selected_kinds(args.selection) == [
+        PYTHON_WORKFLOW_KIND
+    ]:
         raise ConfigError("`build --target` can only be used with native builds")
 
     plan = plan_build(config.build, selection=args.selection, targets=args.targets)
     if not plan.specs:
-        if resolved_selection and resolved_selection != "all":
+        if resolved_selection and resolved_selection != ALL_WORKFLOW_SELECTION:
             raise ConfigError(f"No {resolved_selection} build workflows configured")
         raise ConfigError("No build workflows configured")
     executor.run_specs(plan.specs, dry_run=args.dry_run)
@@ -213,7 +231,7 @@ def _run_test(
     selected = _select_named_items(selected_by_kind, args.runner, "test runner")
     plan = plan_tests(list(selected.values()))
     if not plan.specs:
-        if resolved_selection and resolved_selection != "all":
+        if resolved_selection and resolved_selection != ALL_WORKFLOW_SELECTION:
             raise ConfigError(f"No {resolved_selection} test workflows configured")
         raise ConfigError("No test workflows configured")
     executor.run_specs(plan.specs, dry_run=args.dry_run)

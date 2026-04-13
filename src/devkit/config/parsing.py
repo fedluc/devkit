@@ -5,8 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ..adapters.build import validate_build_backend
+from ..adapters.deploy import supported_deploy_backends, validate_deploy_backend
+from ..adapters.testing import supported_test_backends, validate_test_backend
 from ..errors import ConfigError
-from .constants import WORKFLOW_KINDS
+from .constants import NATIVE_WORKFLOW_KIND, PYTHON_WORKFLOW_KIND, WORKFLOW_KINDS
 from .models import (
     BuildConfig,
     CleanConfig,
@@ -31,7 +34,18 @@ from .values import (
 
 
 def _parse_config(data: dict[str, Any], project_root: Path) -> DevkitConfig:
-    """Parse raw configuration data into typed config objects."""
+    """Parse raw configuration data into typed config objects.
+
+    Args:
+        data: Raw merged configuration mapping.
+        project_root: Directory containing the resolved config file.
+
+    Returns:
+        Fully parsed configuration object.
+
+    Raises:
+        ConfigError: If any top-level configuration section is malformed.
+    """
 
     project = data.get("project") or {}
     if not isinstance(project, dict) or not project.get("name"):
@@ -54,12 +68,20 @@ def _parse_config(data: dict[str, Any], project_root: Path) -> DevkitConfig:
 
 
 def _parse_build(data: dict[str, Any]) -> BuildConfig:
-    """Parse build configuration for supported backends."""
+    """Parse build configuration for supported backends.
+
+    Args:
+        data: Raw build configuration mapping.
+
+    Returns:
+        Parsed build configuration.
+
+    Raises:
+        ConfigError: If the build section is malformed.
+    """
 
     if not isinstance(data, dict):
         raise ConfigError("`build` must be a mapping")
-
-    from ..adapters.build import validate_build_backend
 
     entries: dict[str, NativeBuildConfig | PythonBuildConfig] = {}
     native = None
@@ -93,9 +115,9 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
         config = _parse_build_backend(name, build_data, backend)
         validate_build_backend(config)
         entries[name] = config
-        if name == "native" and isinstance(config, NativeBuildConfig):
+        if name == NATIVE_WORKFLOW_KIND and isinstance(config, NativeBuildConfig):
             native = config
-        if name == "python" and isinstance(config, PythonBuildConfig):
+        if name == PYTHON_WORKFLOW_KIND and isinstance(config, PythonBuildConfig):
             python_build = config
 
     return BuildConfig(
@@ -106,7 +128,19 @@ def _parse_build(data: dict[str, Any]) -> BuildConfig:
 def _parse_build_backend(
     name: str, data: dict[str, Any], backend: str
 ) -> NativeBuildConfig | PythonBuildConfig:
-    """Parse a configured build backend by backend type."""
+    """Parse a configured build backend by backend type.
+
+    Args:
+        name: Build entry name from the config.
+        data: Raw build entry mapping.
+        backend: Validated backend identifier.
+
+    Returns:
+        Parsed native or Python build config.
+
+    Raises:
+        ConfigError: If the backend-specific configuration is invalid.
+    """
 
     path = f"build.{name}"
     if backend == "cmake":
@@ -141,12 +175,20 @@ def _parse_build_backend(
 
 
 def _parse_tests(data: dict[str, Any]) -> TestConfig:
-    """Parse test runner configuration."""
+    """Parse test runner configuration.
+
+    Args:
+        data: Raw test configuration mapping.
+
+    Returns:
+        Parsed test configuration.
+
+    Raises:
+        ConfigError: If the test section is malformed.
+    """
 
     if not isinstance(data, dict):
         raise ConfigError("`test` must be a mapping")
-
-    from ..adapters.testing import supported_test_backends, validate_test_backend
 
     reject_unknown_keys(data, "test", {"default", "runners"})
     runners_data = data.get("runners") or {}
@@ -205,12 +247,20 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
 
 
 def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
-    """Parse deploy target configuration."""
+    """Parse deploy target configuration.
+
+    Args:
+        data: Raw deploy configuration mapping.
+
+    Returns:
+        Parsed deploy targets keyed by target name.
+
+    Raises:
+        ConfigError: If the deploy section is malformed.
+    """
 
     if not isinstance(data, dict):
         raise ConfigError("`deploy` must be a mapping")
-
-    from ..adapters.deploy import supported_deploy_backends, validate_deploy_backend
 
     reject_unknown_keys(data, "deploy", {"targets"})
     targets_data = data.get("targets") or {}
@@ -254,7 +304,17 @@ def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
 
 
 def _parse_clean(data: dict[str, Any]) -> CleanConfig:
-    """Parse clean-path configuration."""
+    """Parse clean-path configuration.
+
+    Args:
+        data: Raw clean configuration mapping.
+
+    Returns:
+        Parsed clean configuration.
+
+    Raises:
+        ConfigError: If the clean section is malformed.
+    """
 
     if not isinstance(data, dict):
         raise ConfigError("`clean` must be a mapping")
@@ -262,10 +322,20 @@ def _parse_clean(data: dict[str, Any]) -> CleanConfig:
 
 
 def _build_backends_for_entry(name: str) -> set[str]:
-    """Return the supported build backends for a specific build entry."""
+    """Return the supported build backends for a specific build entry.
 
-    if name == "native":
+    Args:
+        name: Build entry name from the config.
+
+    Returns:
+        Set of supported backend identifiers for the entry.
+
+    Raises:
+        ConfigError: If the build entry name is unsupported.
+    """
+
+    if name == NATIVE_WORKFLOW_KIND:
         return {"cmake"}
-    if name == "python":
+    if name == PYTHON_WORKFLOW_KIND:
         return {"python-build"}
     raise ConfigError(f"`build.{name}` is not a supported build entry")

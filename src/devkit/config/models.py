@@ -6,6 +6,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ..adapters.kinds import test_backend_kind
+from .constants import (
+    ALL_WORKFLOW_SELECTION,
+    NATIVE_WORKFLOW_KIND,
+    PYTHON_WORKFLOW_KIND,
+)
+
 
 @dataclass(frozen=True)
 class HookConfig:
@@ -106,9 +113,9 @@ class BuildConfig:
             ]
 
         backends: list[NativeBuildConfig | PythonBuildConfig] = []
-        if self.native is not None and "native" in active_kinds:
+        if self.native is not None and NATIVE_WORKFLOW_KIND in active_kinds:
             backends.append(self.native)
-        if self.python is not None and "python" in active_kinds:
+        if self.python is not None and PYTHON_WORKFLOW_KIND in active_kinds:
             backends.append(self.python)
         return backends
 
@@ -126,9 +133,9 @@ class BuildConfig:
 
         kinds: list[str] = []
         if self.native is not None:
-            kinds.append("native")
+            kinds.append(NATIVE_WORKFLOW_KIND)
         if self.python is not None:
-            kinds.append("python")
+            kinds.append(PYTHON_WORKFLOW_KIND)
         return kinds
 
     def selected_kinds(self, selection: str | None = None) -> list[str]:
@@ -141,8 +148,8 @@ class BuildConfig:
             Ordered build kinds that should run for the invocation.
         """
 
-        selected = selection or self.default or "all"
-        if selected == "all":
+        selected = selection or self.default or ALL_WORKFLOW_SELECTION
+        if selected == ALL_WORKFLOW_SELECTION:
             return self.available_kinds()
         return [selected]
 
@@ -167,7 +174,9 @@ class TestConfig:
             Ordered test kinds present in the configured runners.
         """
 
-        return _ordered_unique(test_kind(runner) for runner in self.runners.values())
+        return _ordered_unique(
+            test_backend_kind(runner.backend) for runner in self.runners.values()
+        )
 
     def selected_kinds(self, selection: str | None = None) -> list[str]:
         """Resolve the active test kinds for an invocation.
@@ -179,8 +188,8 @@ class TestConfig:
             Ordered test kinds that should run for the invocation.
         """
 
-        selected = selection or self.default or "all"
-        if selected == "all":
+        selected = selection or self.default or ALL_WORKFLOW_SELECTION
+        if selected == ALL_WORKFLOW_SELECTION:
             return self.available_kinds()
         return [selected]
 
@@ -200,7 +209,7 @@ class TestConfig:
         return {
             name: runner
             for name, runner in self.runners.items()
-            if test_kind(runner) in active_kinds
+            if test_backend_kind(runner.backend) in active_kinds
         }
 
 
@@ -322,23 +331,8 @@ def build_kind(config: NativeBuildConfig | PythonBuildConfig) -> str:
     """
 
     if isinstance(config, NativeBuildConfig):
-        return "native"
-    return "python"
-
-
-def test_kind(config: TestRunnerConfig) -> str:
-    """Return the logical kind for a parsed test runner config.
-
-    Args:
-        config: Parsed test runner configuration.
-
-    Returns:
-        Logical test kind associated with the runner backend.
-    """
-
-    from ..adapters.testing import test_backend_kind
-
-    return test_backend_kind(config.backend)
+        return NATIVE_WORKFLOW_KIND
+    return PYTHON_WORKFLOW_KIND
 
 
 def _ordered_unique(values: Any) -> list[str]:
