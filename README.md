@@ -54,17 +54,15 @@ test:
 
 Typical commands:
 
-These examples use the bundled repository example config so they can be run
-from this repository root as written. They focus on validation, inspection, and
-dry-run output because the bundled config is a documentation fixture rather than
-a full standalone project:
+These examples assume you are running `foga` from a project root that contains
+`foga.yml`:
 
 ```bash
-foga --config examples/qupled/foga.yml validate                  # Check that the example config is well-formed
-foga --config examples/qupled/foga.yml inspect                   # Print the resolved example configuration
-foga --config examples/qupled/foga.yml build --dry-run           # Show planned build commands without executing
-foga --config examples/qupled/foga.yml test --dry-run            # Show planned test commands without executing
-foga --config examples/qupled/foga.yml deploy --target pypi --dry-run # Preview the example deploy command
+foga validate                  # Check that foga.yml is well-formed
+foga inspect                   # Print the resolved configuration
+foga build --dry-run           # Show planned build commands without executing
+foga test --dry-run            # Show planned test commands without executing
+foga deploy --target pypi --dry-run # Preview the deploy command
 ```
 
 ## End-To-End Workflow
@@ -336,8 +334,8 @@ hook.
 Use `foga validate` to catch malformed config early:
 
 ```bash
-foga --config examples/qupled/foga.yml validate   # Validate the bundled example config
-foga --config path/to/foga.yml validate           # Validate a specific config file
+foga validate                              # Validate the default ./foga.yml
+foga --config path/to/foga.yml validate    # Validate a specific config file
 ```
 
 This is the first command to run after editing the configuration.
@@ -347,11 +345,11 @@ This is the first command to run after editing the configuration.
 Use `foga build` to run configured build workflows:
 
 ```bash
-foga --config examples/qupled/foga.yml build --dry-run                    # Preview all configured build workflows
-foga --config examples/qupled/foga.yml build python --dry-run             # Preview only the Python package build
-foga --config examples/qupled/foga.yml build native --target native_tests --dry-run # Preview one native target explicitly
-foga --config examples/qupled/foga.yml build all --profile mpi --dry-run  # Preview builds with the mpi profile applied
-foga --config examples/qupled/foga.yml build --dry-run                    # Print the planned build commands
+foga build --dry-run                                # Preview all configured build workflows
+foga build python --dry-run                         # Preview only the Python package build
+foga build native --target native_tests --dry-run   # Preview one native target explicitly
+foga build all --profile mpi --dry-run              # Preview builds with the mpi profile applied
+foga build --dry-run                                # Print the planned build commands
 ```
 
 ### Test
@@ -359,10 +357,10 @@ foga --config examples/qupled/foga.yml build --dry-run                    # Prin
 Use `foga test` to run one or more configured test runners:
 
 ```bash
-foga --config examples/qupled/foga.yml test --dry-run               # Preview all configured test workflows
-foga --config examples/qupled/foga.yml test python --runner unit --dry-run # Preview only the Python runner named "unit"
-foga --config examples/qupled/foga.yml test native --dry-run        # Preview only native test workflows
-foga --config examples/qupled/foga.yml test --profile mpi --dry-run # Preview test commands with the mpi profile
+foga test --dry-run                            # Preview all configured test workflows
+foga test python --runner unit --dry-run       # Preview only the Python runner named "unit"
+foga test native --dry-run                     # Preview only native test workflows
+foga test --profile mpi --dry-run              # Preview test commands with the mpi profile
 ```
 
 ### Deploy
@@ -370,7 +368,7 @@ foga --config examples/qupled/foga.yml test --profile mpi --dry-run # Preview te
 Use `foga deploy` to run deployment targets:
 
 ```bash
-foga --config examples/qupled/foga.yml deploy --target pypi --dry-run # Preview the pypi upload command
+foga deploy --target pypi --dry-run    # Preview the pypi upload command
 ```
 
 ### Clean
@@ -378,7 +376,7 @@ foga --config examples/qupled/foga.yml deploy --target pypi --dry-run # Preview 
 Use `foga clean` to remove configured generated paths:
 
 ```bash
-foga --config examples/qupled/foga.yml clean   # Remove paths listed in the example config
+foga clean   # Remove the paths listed under clean.paths
 ```
 
 ### Inspect
@@ -387,12 +385,12 @@ Use `foga inspect` to print the resolved configuration without executing
 commands:
 
 ```bash
-foga --config examples/qupled/foga.yml inspect                                     # Print the full resolved config
-foga --config examples/qupled/foga.yml inspect --profile mpi                       # Inspect after applying mpi
-foga --config examples/qupled/foga.yml inspect build native --target native_tests  # Inspect native build selection
-foga --config examples/qupled/foga.yml inspect test python --runner unit           # Inspect the selected test runner
-foga --config examples/qupled/foga.yml inspect deploy --target pypi                # Inspect one deploy target
-foga --config examples/qupled/foga.yml inspect --full build native                 # Show the full document for build
+foga inspect                                     # Print the full resolved config
+foga inspect --profile mpi                       # Inspect after applying mpi
+foga inspect build native --target native_tests  # Inspect native build selection
+foga inspect test python --runner unit           # Inspect the selected test runner
+foga inspect deploy --target pypi                # Inspect one deploy target
+foga inspect --full build native                 # Show the full document for build
 ```
 
 Top-level `foga inspect` prints the full resolved config. Command-specific
