@@ -169,6 +169,127 @@ test:
         load_config(config_path)
 
 
+def test_load_config_parses_structured_hooks(tmp_path: Path) -> None:
+    """Hook commands use explicit argv mappings."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    hooks:
+      pre:
+        - argv: ["python3", "tools/prepare.py"]
+      post:
+        - argv: ["python3", "tools/cleanup.py"]
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    config = load_config(config_path)
+
+    assert config.build.python is not None
+    assert [command.argv for command in config.build.python.hooks.pre] == [
+        ["python3", "tools/prepare.py"]
+    ]
+    assert [command.argv for command in config.build.python.hooks.post] == [
+        ["python3", "tools/cleanup.py"]
+    ]
+
+
+def test_load_config_rejects_legacy_hook_command_arrays(tmp_path: Path) -> None:
+    """Hook commands must use structured mappings instead of raw arrays."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    hooks:
+      pre:
+        - ["python3", "tools/prepare.py"]
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`build.python.hooks.pre\\[0\\]` must be a mapping with an `argv` list",
+    ):
+        load_config(config_path)
+
+
+def test_load_config_rejects_unknown_hook_keys(tmp_path: Path) -> None:
+    """Hook config only accepts explicit pre and post command lists."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    hooks:
+      before:
+        - argv: ["python3", "tools/prepare.py"]
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`build.python.hooks.before` is not a supported configuration key",
+    ):
+        load_config(config_path)
+
+
+def test_load_config_rejects_unknown_custom_command_keys(tmp_path: Path) -> None:
+    """Custom commands only accept the explicit argv field."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+build:
+  python:
+    backend: python-build
+    hooks:
+      pre:
+        - argv: ["python3", "tools/prepare.py"]
+          shell: false
+test:
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match=(
+            "`build.python.hooks.pre\\[0\\].shell` is not a supported configuration key"
+        ),
+    ):
+        load_config(config_path)
+
+
 def test_load_config_parses_build_and_test_defaults(tmp_path: Path) -> None:
     """Workflow defaults are loaded for build and test selection."""
     config_path = write_config(
