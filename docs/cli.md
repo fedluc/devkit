@@ -11,6 +11,15 @@ foga --config path/to/foga.yml validate    # Validate a specific config file
 
 This is the first command to run after editing the configuration.
 
+## Version
+
+Use `foga --version` or `foga version` to print the installed CLI version:
+
+```bash
+foga --version
+foga version
+```
+
 ## Build
 
 Use `foga build` to run configured build workflows:

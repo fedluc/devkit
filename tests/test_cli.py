@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 from typer.testing import CliRunner
 
-from foga import cli
+from foga import __version__, cli
 
 
 def write_config(path: Path) -> Path:
@@ -99,6 +99,26 @@ def test_validate_command_succeeds(tmp_path: Path, capsys) -> None:
     assert "Lint targets" in captured.out
     assert "Deploy targets" in captured.out
     assert "Clean paths" in captured.out
+
+
+def test_root_version_option_reports_installed_version() -> None:
+    """The root version option prints the installed package version."""
+    runner = CliRunner()
+
+    result = runner.invoke(cli.app, ["--version"])
+
+    assert result.exit_code == 0
+    assert result.stdout == f"foga {__version__}\n"
+
+
+def test_version_command_reports_installed_version() -> None:
+    """The version subcommand prints the installed package version."""
+    runner = CliRunner()
+
+    result = runner.invoke(cli.app, ["version"])
+
+    assert result.exit_code == 0
+    assert result.stdout == f"foga {__version__}\n"
 
 
 def test_validate_reports_yaml_syntax_errors_with_location(
@@ -1095,6 +1115,7 @@ def test_help_text_describes_common_profile_target_runner_and_dry_run_options() 
     root_result = runner.invoke(cli.app, ["--help"])
     build_result = runner.invoke(cli.app, ["build", "--help"])
     test_result = runner.invoke(cli.app, ["test", "--help"])
+    version_result = runner.invoke(cli.app, ["version", "--help"])
     docs_result = runner.invoke(cli.app, ["docs", "--help"])
     format_result = runner.invoke(cli.app, ["format", "--help"])
     lint_result = runner.invoke(cli.app, ["lint", "--help"])
@@ -1103,16 +1124,19 @@ def test_help_text_describes_common_profile_target_runner_and_dry_run_options() 
     assert root_result.exit_code == 0
     assert build_result.exit_code == 0
     assert test_result.exit_code == 0
+    assert version_result.exit_code == 0
     assert docs_result.exit_code == 0
     assert format_result.exit_code == 0
     assert lint_result.exit_code == 0
     assert deploy_result.exit_code == 0
 
+    assert "Show the installed foga version and exit." in root_result.stdout
     assert "Apply a named configuration profile" in build_result.stdout
     assert "Show the planned build commands without executing" in build_result.stdout
     assert "them." in build_result.stdout
     assert "Run only the named test runner." in test_result.stdout
     assert "multiple runners." in test_result.stdout
+    assert "Print the installed foga version." in version_result.stdout
     assert "Run only the named docs target." in docs_result.stdout
     assert "Run only the named format target." in format_result.stdout
     assert "Run only the named lint target." in lint_result.stdout
