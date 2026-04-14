@@ -58,8 +58,8 @@ The usual workflow for adopting `foga` in a repository is:
    workflow.
 2. Run `foga validate` until the configuration passes.
 3. Run `foga inspect` to check the merged effective config.
-4. Use a dry-run command such as `foga build --dry-run`, `foga test --dry-run`,
-   or `foga docs --dry-run` to inspect generated commands before execution.
+4. Use a dry-run command such as `foga build --dry-run` or
+   `foga test --dry-run` to inspect generated commands before execution.
 5. Run the real command once the plan looks right.
 6. Add profiles only after the base config is working.
 
