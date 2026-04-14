@@ -199,6 +199,8 @@ class TestConfig(WorkflowSelectionConfig):
         runners: Parsed test runners keyed by runner name.
     """
 
+    __test__ = False
+
     runners: dict[str, TestRunnerConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -249,6 +251,8 @@ class TestRunnerConfig(NamedBackendConfig):
         build_args: Extra CMake build arguments for ctest.
         target: Optional build target for ctest preparation.
     """
+
+    __test__ = False
 
     path: str | None = None
     marker: str | None = None
