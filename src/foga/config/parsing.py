@@ -7,6 +7,7 @@ from typing import Any
 
 from ..adapters.build import validate_build_backend
 from ..adapters.deploy import supported_deploy_backends, validate_deploy_backend
+from ..adapters.docs import supported_docs_backends, validate_docs_backend
 from ..adapters.testing import supported_test_backends, validate_test_backend
 from ..errors import ConfigError
 from .constants import CPP_WORKFLOW_KIND, PYTHON_WORKFLOW_KIND, WORKFLOW_KINDS
@@ -15,6 +16,8 @@ from .models import (
     CleanConfig,
     CppBuildConfig,
     DeployTargetConfig,
+    DocsConfig,
+    DocsTargetConfig,
     FogaConfig,
     ProjectConfig,
     PythonBuildConfig,
@@ -53,6 +56,7 @@ def _parse_config(data: dict[str, Any], project_root: Path) -> FogaConfig:
 
     build = _parse_build(data.get("build") or {})
     tests = _parse_tests(data.get("test") or {})
+    docs = _parse_docs(data.get("docs") or {})
     deploy = _parse_deploy(data.get("deploy") or {})
     clean = _parse_clean(data.get("clean") or {})
 
@@ -61,6 +65,7 @@ def _parse_config(data: dict[str, Any], project_root: Path) -> FogaConfig:
         project=ProjectConfig(name=str(project["name"])),
         build=build,
         tests=tests,
+        docs=docs,
         deploy=deploy,
         clean=clean,
         raw=data,
@@ -301,6 +306,66 @@ def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
         targets[name] = target
 
     return targets
+
+
+def _parse_docs(data: dict[str, Any]) -> DocsConfig:
+    """Parse docs target configuration.
+
+    Args:
+        data: Raw docs configuration mapping.
+
+    Returns:
+        Parsed docs configuration.
+
+    Raises:
+        ConfigError: If the docs section is malformed.
+    """
+
+    if not isinstance(data, dict):
+        raise ConfigError("`docs` must be a mapping")
+
+    reject_unknown_keys(data, "docs", {"targets"})
+    targets_data = data.get("targets") or {}
+    if not isinstance(targets_data, dict):
+        raise ConfigError("`docs.targets` must be a mapping")
+
+    supported_backends = supported_docs_backends()
+    targets: dict[str, DocsTargetConfig] = {}
+    for name, target_data in targets_data.items():
+        if not isinstance(target_data, dict):
+            raise ConfigError(f"`docs.targets.{name}` must be a mapping")
+
+        backend = optional_str(target_data, "backend", f"docs.targets.{name}.backend")
+        if backend is None:
+            continue
+        if backend not in supported_backends:
+            raise ConfigError(
+                unsupported_backend_message("docs", backend, supported_backends)
+            )
+
+        target = DocsTargetConfig(
+            name=name,
+            backend=backend,
+            args=string_list(target_data.get("args"), f"docs.targets.{name}.args"),
+            env=string_mapping(target_data.get("env"), f"docs.targets.{name}.env"),
+            hooks=parse_hooks(target_data.get("hooks"), f"docs.targets.{name}.hooks"),
+            source_dir=optional_str(
+                target_data, "source_dir", f"docs.targets.{name}.source_dir"
+            ),
+            build_dir=optional_str(
+                target_data, "build_dir", f"docs.targets.{name}.build_dir"
+            ),
+            builder=optional_str(
+                target_data, "builder", f"docs.targets.{name}.builder"
+            ),
+            config_file=optional_str(
+                target_data, "config_file", f"docs.targets.{name}.config_file"
+            ),
+        )
+        validate_docs_backend(target)
+        targets[name] = target
+
+    return DocsConfig(targets=targets)
 
 
 def _parse_clean(data: dict[str, Any]) -> CleanConfig:

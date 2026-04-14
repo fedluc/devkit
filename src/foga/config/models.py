@@ -274,6 +274,44 @@ class DeployTargetConfig:
 
 
 @dataclass(frozen=True)
+class DocsTargetConfig:
+    """Configuration for an individual documentation target.
+
+    Attributes:
+        name: Docs target name from the configuration file.
+        backend: Docs backend identifier.
+        args: Extra backend-specific command arguments.
+        env: Environment variables applied to generated commands.
+        hooks: Commands executed around docs steps.
+        source_dir: Source directory used by documentation generators.
+        build_dir: Output directory used by documentation generators.
+        builder: Optional output builder name for Sphinx.
+        config_file: Optional backend-specific config file path.
+    """
+
+    name: str
+    backend: str
+    args: list[str] = field(default_factory=list)
+    env: dict[str, str] = field(default_factory=dict)
+    hooks: HookConfig = field(default_factory=HookConfig)
+    source_dir: str | None = None
+    build_dir: str | None = None
+    builder: str | None = None
+    config_file: str | None = None
+
+
+@dataclass(frozen=True)
+class DocsConfig:
+    """Aggregate docs configuration for configured documentation workflows.
+
+    Attributes:
+        targets: Parsed docs targets keyed by target name.
+    """
+
+    targets: dict[str, DocsTargetConfig] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class CleanConfig:
     """Configuration for removable build artifact paths.
 
@@ -304,6 +342,7 @@ class FogaConfig:
         project: Parsed project metadata.
         build: Parsed build configuration.
         tests: Parsed test runner configuration and defaults.
+        docs: Parsed documentation target configuration.
         deploy: Parsed deploy configuration keyed by target name.
         clean: Parsed clean configuration.
         raw: Raw merged configuration mapping after profile application.
@@ -313,6 +352,7 @@ class FogaConfig:
     project: ProjectConfig
     build: BuildConfig
     tests: TestConfig
+    docs: DocsConfig
     deploy: dict[str, DeployTargetConfig]
     clean: CleanConfig
     raw: dict[str, Any] = field(repr=False)

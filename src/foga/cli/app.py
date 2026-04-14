@@ -14,6 +14,7 @@ from ..output import format_error
 from .build import build_command
 from .clean import clean_command
 from .deploy import deploy_command
+from .docs import docs_command
 from .inspect import build_inspect_app
 from .test import test_command
 from .validate import validate_command
@@ -27,6 +28,7 @@ app = typer.Typer(
 app.add_typer(build_inspect_app(), name="inspect")
 app.command("build")(build_command)
 app.command("test")(test_command)
+app.command("docs")(docs_command)
 app.command("deploy")(deploy_command)
 app.command("clean")(clean_command)
 app.command("validate")(validate_command)

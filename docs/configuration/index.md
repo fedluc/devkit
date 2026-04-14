@@ -5,6 +5,7 @@
 - `project`: required project metadata
 - `build`: optional build workflows
 - `test`: optional test workflows
+- `docs`: optional docs workflows
 - `deploy`: optional deployment workflows
 - `clean`: optional cleanup targets
 - `profiles`: optional named overrides applied on top of the base config
@@ -30,6 +31,13 @@ test:
     unit:
       backend: pytest
       path: tests
+
+docs:
+  targets:
+    python-api:
+      backend: sphinx
+      source_dir: docs
+      build_dir: docs/_build/html
 
 deploy:
   targets:
@@ -85,6 +93,14 @@ want `foga test` to run anything.
 the `twine` backend to upload matched artifacts.
 
 `deploy` is optional. Configure it only if you want `foga deploy`.
+
+### `docs`
+
+`docs.targets` is a mapping keyed by target name. Each target chooses a backend
+such as `sphinx`, `mkdocs`, or `doxygen`.
+
+`docs` is optional, but `docs.targets` is the important nested section when you
+want `foga docs` to run anything.
 
 ### `clean`
 

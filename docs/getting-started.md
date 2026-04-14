@@ -44,6 +44,7 @@ foga validate                  # Check that foga.yml is well-formed
 foga inspect                   # Print the resolved configuration
 foga build --dry-run           # Show planned build commands without executing
 foga test --dry-run            # Show planned test commands without executing
+foga docs --dry-run            # Show planned docs commands without executing
 foga deploy --target pypi --dry-run # Preview the deploy command
 ```
 
@@ -55,8 +56,8 @@ The usual workflow for adopting `foga` in a repository is:
    workflow.
 2. Run `foga validate` until the configuration passes.
 3. Run `foga inspect` to check the merged effective config.
-4. Use `foga build --dry-run`, `foga test --dry-run`, or
-   `foga deploy --dry-run` to inspect generated commands before execution.
+4. Use `foga build --dry-run`, `foga test --dry-run`, `foga docs --dry-run`,
+   or `foga deploy --dry-run` to inspect generated commands before execution.
 5. Run the real command once the plan looks right.
 6. Add profiles only after the base config is working.
 
