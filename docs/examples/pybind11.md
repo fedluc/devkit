@@ -33,5 +33,3 @@ foga build --profile cpptest cpp
 
 Use this example when you want a self-contained demonstration of `foga` on a
 well-known C++/Python project without requiring a pre-existing local checkout.
-It also shows a profile-level launcher override for wrapper-based tool
-execution.
