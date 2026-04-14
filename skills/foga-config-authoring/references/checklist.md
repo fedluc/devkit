@@ -24,9 +24,9 @@ Add:
 - `env` when packaging relies on environment variables
 - `args` only for extra `python -m build` flags
 
-### Native Build
+### C++ Build
 
-Use `build.native.backend: cmake` when the repository has an explicit standalone CMake build.
+Use `build.cpp.backend: cmake` when the repository has an explicit standalone CMake build.
 
 Set:
 
@@ -38,7 +38,7 @@ Set:
 - `targets` only when a stable named target should be the default
 - `build_args` when resource limits or tool behavior require explicit parallelism or other build flags
 
-Do not collapse standalone native builds into `python-build` just because the package also compiles a native extension during wheel creation. If the repo documents stable top-level CMake targets, prefer those targets over inventing a `ctest` runner.
+Do not collapse standalone C++ builds into `python-build` just because the package also compiles a compiled extension during wheel creation. If the repo documents stable top-level CMake targets, prefer those targets over inventing a `ctest` runner.
 
 ## Test Mapping
 
@@ -52,7 +52,7 @@ Set:
 - `marker` when the repository uses marker-separated suites
 - `args` for verbosity or other flags
 
-Split runners by behavior when the repo has distinct suites such as `unit`, `native`, or `integration`.
+Split runners by behavior when the repo has distinct suites such as `unit`, `cpp`, or `integration`.
 
 ### Tox
 
@@ -67,7 +67,7 @@ If tox only shells out to pytest with minor setup, usually prefer `pytest` plus 
 
 ### CTest
 
-Use `ctest` for standalone C++ or native test binaries.
+Use `ctest` for standalone C++ test binaries.
 
 Set:
 
@@ -99,7 +99,7 @@ Bad uses:
 Add profiles only for real modes present in the target repo, such as:
 
 - MPI on/off
-- release vs debug native options
+- release vs debug C++ options
 - platform-specific environment variables
 - alternate deploy targets
 

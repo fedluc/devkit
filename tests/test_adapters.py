@@ -115,7 +115,7 @@ def test_plan_tests_ctest_runner_can_prepare_target_before_running() -> None:
         source_dir="src/cpp",
         build_dir="build/cpp-tests",
         target="cpp_tests",
-        configure_args=["-DBUILD_NATIVE_TESTS=ON"],
+        configure_args=["-DBUILD_CPP_TESTS=ON"],
     )
 
     specs = plan_tests([runner]).specs
@@ -126,7 +126,7 @@ def test_plan_tests_ctest_runner_can_prepare_target_before_running() -> None:
         "src/cpp",
         "-B",
         "build/cpp-tests",
-        "-DBUILD_NATIVE_TESTS=ON",
+        "-DBUILD_CPP_TESTS=ON",
     ]
     assert specs[1].command == [
         "cmake",
