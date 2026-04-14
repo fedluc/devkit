@@ -8,6 +8,7 @@ from typing import Annotated
 import click
 import typer
 
+from .. import __version__
 from ..config.constants import DEFAULT_CONFIG_FILENAME
 from ..errors import FogaError
 from ..output import format_error
@@ -38,6 +39,44 @@ app.command("clean")(clean_command)
 app.command("validate")(validate_command)
 
 
+def _version_text() -> str:
+    """Return the user-facing CLI version string.
+
+    Returns:
+        Installed ``foga`` version string rendered for CLI output.
+    """
+
+    return f"foga {__version__}"
+
+
+def _show_version_callback(value: bool) -> None:
+    """Print the CLI version and exit when the eager flag is used.
+
+    Args:
+        value: Whether the ``--version`` flag was requested.
+
+    Raises:
+        typer.Exit: Always, after printing the installed version.
+    """
+
+    if not value:
+        return
+    typer.echo(_version_text())
+    raise typer.Exit(code=0)
+
+
+@app.command("version")
+def version_command() -> int:
+    """Print the installed foga version.
+
+    Returns:
+        Process exit code for the version command.
+    """
+
+    typer.echo(_version_text())
+    return 0
+
+
 @app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
@@ -48,9 +87,19 @@ def main_callback(
             help="Path to the foga YAML configuration file to load.",
         ),
     ] = DEFAULT_CONFIG_FILENAME,
+    show_version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=_show_version_callback,
+            help="Show the installed foga version and exit.",
+            is_eager=True,
+        ),
+    ] = False,
 ) -> None:
     """Initialize shared CLI context and render root help when needed."""
     ctx.obj = config
+    _ = show_version
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help(), nl=False)
         raise typer.Exit(code=0)
