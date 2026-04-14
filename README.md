@@ -4,13 +4,14 @@
 
 `foga` is a Python package and CLI for developers maintaining Python packages
 with C or C++ bindings. It replaces ad-hoc repository scripts with a
-single YAML configuration file that drives build, test, docs, deploy, inspect,
-and cleanup workflows.
+single YAML configuration file that drives build, test, docs, format, lint,
+deploy, inspect, and cleanup workflows.
 
 ## What foga does
 
 - build Python packages and C++ artifacts from one config file
 - run Python and C++ test workflows through one CLI
+- run Python and C++ format and lint workflows through one CLI
 - generate Python and C++ documentation through one CLI
 - switch environment-specific settings with named profiles
 - inspect the resolved config before running anything
@@ -47,8 +48,13 @@ foga inspect
 foga build --dry-run
 foga test --dry-run
 foga docs --dry-run
+foga format --dry-run
+foga lint --dry-run
 foga deploy --target pypi --dry-run
 ```
+
+Python lint targets can use `ruff-check` or `pylint`, and C++ lint targets can
+use `clang-tidy`.
 
 ## Documentation
 

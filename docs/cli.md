@@ -43,6 +43,26 @@ foga docs --target python-api --dry-run          # Preview one docs target expli
 foga docs --profile release --dry-run            # Preview docs generation with a profile
 ```
 
+## Format
+
+Use `foga format` to run configured format targets:
+
+```bash
+foga format --dry-run                                # Preview all configured format targets
+foga format python --target python-style --dry-run   # Preview one Python formatter target
+foga format cpp --dry-run                            # Preview only C++ format targets
+```
+
+## Lint
+
+Use `foga lint` to run configured lint targets:
+
+```bash
+foga lint --dry-run                               # Preview all configured lint targets
+foga lint python --target python-style --dry-run  # Preview one Python linter target
+foga lint cpp --dry-run                           # Preview only C++ lint targets
+```
+
 ## Deploy
 
 Use `foga deploy` to run deployment targets:
@@ -87,6 +107,8 @@ Available dry-run commands:
 - `foga test --dry-run`
 - `foga docs --dry-run`
 - `foga deploy --dry-run`
+- `foga format --dry-run`
+- `foga lint --dry-run`
 
 Dry-run output shows the planned commands without executing them. Use it to
 verify:

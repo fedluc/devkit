@@ -2,101 +2,65 @@
 
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
+from typing import Callable
 
+from ..config.constants import DOCS_SECTION, TARGETS_KEY
 from ..config.models import DocsTargetConfig
 from ..errors import ConfigError
 from ..executor import CommandSpec
 from .common import split_hooks
-from .contracts import BackendContract, DocsRequest, WorkflowPlan
+from .contracts import (
+    BackendContract,
+    ToolRequest,
+    WorkflowPlan,
+    require_backend_contract,
+)
+from .kinds import DOCS_DOXYGEN, DOCS_MKDOCS, DOCS_SPHINX
 
 
 def plan_docs(project_root: Path, targets: list[DocsTargetConfig]) -> WorkflowPlan:
     """Build a workflow plan for configured docs targets.
 
     Args:
-        project_root: Project root used as the default working directory.
-        targets: Docs targets selected for the current invocation.
+        project_root: Project root used as the command working directory.
+        targets: Parsed docs targets selected for execution.
 
     Returns:
-        Prepared command specs for each selected docs target.
+        Planned command specs for all selected docs targets.
     """
 
     specs: list[CommandSpec] = []
-    request = DocsRequest(project_root=project_root)
+    request = ToolRequest(project_root=project_root)
     for target in targets:
-        contract = _docs_contract(target.backend)
+        contract = require_backend_contract(DOCS_SECTION, target.backend, DOCS_BACKENDS)
         contract.validate(target)
         specs.extend(contract.plan(target, request))
     return WorkflowPlan(specs=specs)
 
 
-def supported_docs_backends() -> set[str]:
-    """Return the registered docs backend names.
-
-    Returns:
-        Set of registered docs backend names.
-    """
-
-    return set(DOCS_BACKENDS)
-
-
-def validate_docs_backend(config: DocsTargetConfig) -> None:
-    """Validate a configured docs backend through the registry contract.
+def _plan_docs_target(
+    config: DocsTargetConfig,
+    request: ToolRequest,
+    *,
+    command_builder: Callable[[DocsTargetConfig], list[str]],
+) -> list[CommandSpec]:
+    """Build command specs for a docs backend that emits one shell command.
 
     Args:
         config: Parsed docs target configuration.
-    """
-
-    _docs_contract(config.backend).validate(config)
-
-
-def _docs_contract(backend: str) -> BackendContract[DocsTargetConfig, DocsRequest]:
-    """Resolve a registered docs backend contract.
-
-    Args:
-        backend: Configured docs backend name.
+        request: Shared tool request with the project root.
+        command_builder: Function that builds the backend command.
 
     Returns:
-        Registered backend contract for the requested backend.
-
-    Raises:
-        ConfigError: If the backend name is not registered.
-    """
-
-    try:
-        return DOCS_BACKENDS[backend]
-    except KeyError as exc:
-        supported = ", ".join(sorted(DOCS_BACKENDS))
-        raise ConfigError(
-            f"Unsupported docs backend: {backend}",
-            hint=f"Choose one of the supported docs backends: {supported}.",
-        ) from exc
-
-
-def _sphinx_plan(config: DocsTargetConfig, request: DocsRequest) -> list[CommandSpec]:
-    """Build the sphinx-build command for a docs target.
-
-    Args:
-        config: Parsed docs target configuration.
-        request: Docs planning options.
-
-    Returns:
-        Command specs for the configured Sphinx docs target.
+        Command specs for the selected docs target, including hooks.
     """
 
     pre_hooks, post_hooks = split_hooks(config.hooks, config.name)
-    command = [
-        "sphinx-build",
-        "-b",
-        config.builder or "html",
-        config.source_dir or "",
-        config.build_dir or "",
-    ]
-    command.extend(config.args)
     specs = pre_hooks + [
         CommandSpec(
-            command=command,
+            command=command_builder(config),
             cwd=request.project_root,
             env=config.env,
             description=f"docs target `{config.name}`",
@@ -106,120 +70,98 @@ def _sphinx_plan(config: DocsTargetConfig, request: DocsRequest) -> list[Command
     return specs
 
 
-def _mkdocs_plan(config: DocsTargetConfig, request: DocsRequest) -> list[CommandSpec]:
-    """Build the mkdocs command for a docs target.
+def _build_sphinx_command(config: DocsTargetConfig) -> list[str]:
+    """Build the ``sphinx-build`` command for a docs target.
 
     Args:
-        config: Parsed docs target configuration.
-        request: Docs planning options.
+        config: Parsed Sphinx docs target configuration.
 
     Returns:
-        Command specs for the configured MkDocs target.
+        Command line for the selected Sphinx target.
     """
 
-    pre_hooks, post_hooks = split_hooks(config.hooks, config.name)
+    return [
+        "sphinx-build",
+        "-b",
+        config.builder or "html",
+        config.source_dir or "",
+        config.build_dir or "",
+        *config.args,
+    ]
+
+
+def _build_mkdocs_command(config: DocsTargetConfig) -> list[str]:
+    """Build the ``mkdocs build`` command for a docs target.
+
+    Args:
+        config: Parsed MkDocs target configuration.
+
+    Returns:
+        Command line for the selected MkDocs target.
+    """
+
     command = ["mkdocs", "build"]
     if config.config_file:
         command.extend(["--config-file", config.config_file])
     if config.build_dir:
         command.extend(["--site-dir", config.build_dir])
     command.extend(config.args)
-    specs = pre_hooks + [
-        CommandSpec(
-            command=command,
-            cwd=request.project_root,
-            env=config.env,
-            description=f"docs target `{config.name}`",
-        )
-    ]
-    specs.extend(post_hooks)
-    return specs
+    return command
 
 
-def _doxygen_plan(config: DocsTargetConfig, request: DocsRequest) -> list[CommandSpec]:
-    """Build the doxygen command for a docs target.
+def _build_doxygen_command(config: DocsTargetConfig) -> list[str]:
+    """Build the ``doxygen`` command for a docs target.
 
     Args:
-        config: Parsed docs target configuration.
-        request: Docs planning options.
+        config: Parsed Doxygen target configuration.
 
     Returns:
-        Command specs for the configured Doxygen target.
+        Command line for the selected Doxygen target.
     """
 
-    pre_hooks, post_hooks = split_hooks(config.hooks, config.name)
-    command = ["doxygen", config.config_file or ""]
-    command.extend(config.args)
-    specs = pre_hooks + [
-        CommandSpec(
-            command=command,
-            cwd=request.project_root,
-            env=config.env,
-            description=f"docs target `{config.name}`",
+    return ["doxygen", config.config_file or "", *config.args]
+
+
+def _validate_required_fields(
+    config: DocsTargetConfig,
+    *,
+    fields: tuple[str, ...],
+) -> None:
+    """Validate required docs target fields for a backend.
+
+    Args:
+        config: Parsed docs target configuration.
+        fields: Target fields that must be configured.
+
+    Raises:
+        ConfigError: If any required field is missing.
+    """
+
+    for field_name in fields:
+        if getattr(config, field_name):
+            continue
+        raise ConfigError(
+            f"`{DOCS_SECTION}.{TARGETS_KEY}.{config.name}.{field_name}` is required"
         )
-    ]
-    specs.extend(post_hooks)
-    return specs
 
 
-def _validate_sphinx(config: DocsTargetConfig) -> None:
-    """Validate sphinx target configuration.
-
-    Args:
-        config: Parsed docs target configuration.
-
-    Raises:
-        ConfigError: If required Sphinx fields are missing.
-    """
-
-    if not config.source_dir:
-        raise ConfigError(f"`docs.targets.{config.name}.source_dir` is required")
-    if not config.build_dir:
-        raise ConfigError(f"`docs.targets.{config.name}.build_dir` is required")
-
-
-def _validate_mkdocs(config: DocsTargetConfig) -> None:
-    """Validate mkdocs target configuration.
-
-    Args:
-        config: Parsed docs target configuration.
-
-    Raises:
-        ConfigError: If the MkDocs config file is missing.
-    """
-
-    if not config.config_file:
-        raise ConfigError(f"`docs.targets.{config.name}.config_file` is required")
-
-
-def _validate_doxygen(config: DocsTargetConfig) -> None:
-    """Validate doxygen target configuration.
-
-    Args:
-        config: Parsed docs target configuration.
-
-    Raises:
-        ConfigError: If the Doxygen config file is missing.
-    """
-
-    if not config.config_file:
-        raise ConfigError(f"`docs.targets.{config.name}.config_file` is required")
-
-
-DOCS_BACKENDS: dict[str, BackendContract[DocsTargetConfig, DocsRequest]] = {
-    "sphinx": BackendContract(
-        name="sphinx",
-        validate=_validate_sphinx,
-        plan=_sphinx_plan,
+DOCS_BACKENDS: dict[str, BackendContract[DocsTargetConfig, ToolRequest]] = {
+    DOCS_SPHINX: BackendContract(
+        name=DOCS_SPHINX,
+        validate=partial(
+            _validate_required_fields,
+            fields=("source_dir", "build_dir"),
+        ),
+        plan=partial(_plan_docs_target, command_builder=_build_sphinx_command),
     ),
-    "mkdocs": BackendContract(
-        name="mkdocs",
-        validate=_validate_mkdocs,
-        plan=_mkdocs_plan,
+    DOCS_MKDOCS: BackendContract(
+        name=DOCS_MKDOCS,
+        validate=partial(_validate_required_fields, fields=("config_file",)),
+        plan=partial(_plan_docs_target, command_builder=_build_mkdocs_command),
     ),
-    "doxygen": BackendContract(
-        name="doxygen",
-        validate=_validate_doxygen,
-        plan=_doxygen_plan,
+    DOCS_DOXYGEN: BackendContract(
+        name=DOCS_DOXYGEN,
+        validate=partial(_validate_required_fields, fields=("config_file",)),
+        plan=partial(_plan_docs_target, command_builder=_build_doxygen_command),
     ),
 }

@@ -25,6 +25,8 @@ class ValidationSummary:
         build_workflows: Configured build workflow names or kinds.
         test_runners: Configured test runner names.
         docs_targets: Configured docs target names.
+        format_targets: Configured format target names.
+        lint_targets: Configured lint target names.
         deploy_targets: Configured deploy target names.
         clean_paths: Configured cleanup paths.
     """
@@ -34,6 +36,8 @@ class ValidationSummary:
     build_workflows: list[str]
     test_runners: list[str]
     docs_targets: list[str]
+    format_targets: list[str]
+    lint_targets: list[str]
     deploy_targets: list[str]
     clean_paths: list[str]
 
@@ -48,7 +52,15 @@ def validate_command(
         ),
     ] = None,
 ) -> int:
-    """Validate the configuration file."""
+    """Validate the configuration file.
+
+    Args:
+        ctx: Typer context carrying the resolved config path.
+        profile: Optional profile name applied during validation.
+
+    Returns:
+        Process exit code for the validation command.
+    """
     return run_validate(config_path_from_context(ctx), profile)
 
 
@@ -87,6 +99,8 @@ def _build_validation_summary(
         build_workflows=list(config.build.entries) or config.build.available_kinds(),
         test_runners=list(config.tests.runners),
         docs_targets=list(config.docs.targets),
+        format_targets=list(config.formatters.targets),
+        lint_targets=list(config.linters.targets),
         deploy_targets=list(config.deploy),
         clean_paths=config.clean.paths,
     )
@@ -119,6 +133,14 @@ def _format_validation_summary(summary: ValidationSummary) -> str:
         format_detail(
             "Docs targets",
             ", ".join(summary.docs_targets) if summary.docs_targets else "none",
+        ),
+        format_detail(
+            "Format targets",
+            ", ".join(summary.format_targets) if summary.format_targets else "none",
+        ),
+        format_detail(
+            "Lint targets",
+            ", ".join(summary.lint_targets) if summary.lint_targets else "none",
         ),
         format_detail(
             "Deploy targets",

@@ -1,14 +1,21 @@
 # Configuration Overview
 
-`foga` expects a root-level YAML mapping. The main top-level sections are:
+`foga` expects a root-level YAML mapping with these top-level sections.
 
-- `project`: required project metadata
-- `build`: optional build workflows
-- `test`: optional test workflows
-- `docs`: optional docs workflows
-- `deploy`: optional deployment workflows
-- `clean`: optional cleanup targets
-- `profiles`: optional named overrides applied on top of the base config
+Required sections:
+
+- `project`: project metadata
+
+Optional sections:
+
+- `build`: build workflows
+- `test`: test workflows
+- `docs`: docs workflows
+- `format`: format workflows
+- `lint`: lint workflows
+- `deploy`: deployment workflows
+- `clean`: cleanup targets
+- `profiles`: named overrides applied on top of the base config
 
 ## Example shape
 
@@ -38,6 +45,18 @@ docs:
       backend: sphinx
       source_dir: docs
       build_dir: docs/_build/html
+
+format:
+  targets:
+    python-style:
+      backend: ruff-format
+      paths: ["src", "tests"]
+
+lint:
+  targets:
+    python-style:
+      backend: ruff-check
+      paths: ["src", "tests"]
 
 deploy:
   targets:
@@ -87,13 +106,6 @@ such as `pytest`, `tox`, or `ctest`.
 `test` is optional, but `test.runners` is the important nested section when you
 want `foga test` to run anything.
 
-### `deploy`
-
-`deploy.targets` is a mapping keyed by target name. Each target currently uses
-the `twine` backend to upload matched artifacts.
-
-`deploy` is optional. Configure it only if you want `foga deploy`.
-
 ### `docs`
 
 `docs.targets` is a mapping keyed by target name. Each target chooses a backend
@@ -101,6 +113,33 @@ such as `sphinx`, `mkdocs`, or `doxygen`.
 
 `docs` is optional, but `docs.targets` is the important nested section when you
 want `foga docs` to run anything.
+
+### `format`
+
+`format.targets` is a mapping keyed by target name. Each target chooses a
+backend such as `ruff-format`, `black`, or `clang-format`.
+
+`format.default` may be `cpp`, `python`, or `all`.
+
+`format` is optional, but `format.targets` is the important nested section when
+you want `foga format` to run anything.
+
+### `lint`
+
+`lint.targets` is a mapping keyed by target name. Each target chooses a backend
+such as `ruff-check`, `pylint`, or `clang-tidy`.
+
+`lint.default` may be `cpp`, `python`, or `all`.
+
+`lint` is optional, but `lint.targets` is the important nested section when you
+want `foga lint` to run anything.
+
+### `deploy`
+
+`deploy.targets` is a mapping keyed by target name. Each target currently uses
+the `twine` backend to upload matched artifacts.
+
+`deploy` is optional. Configure it only if you want `foga deploy`.
 
 ### `clean`
 
