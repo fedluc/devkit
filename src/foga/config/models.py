@@ -32,17 +32,33 @@ WorkflowEntryT = TypeVar("WorkflowEntryT", bound="NamedBackendConfig")
 
 @dataclass(frozen=True)
 class WorkflowSelectionConfig:
-    """Shared selection behavior for workflow families with kind defaults."""
+    """Shared selection behavior for workflow families with kind defaults.
+
+    Attributes:
+        default: Default workflow kind selected when the CLI does not provide
+            an explicit choice.
+    """
 
     default: str | None = None
 
     def available_kinds(self) -> list[str]:
-        """Return the configured workflow kinds in stable execution order."""
+        """Return the configured workflow kinds in stable execution order.
+
+        Returns:
+            Ordered workflow kinds configured for the concrete workflow family.
+        """
 
         raise NotImplementedError
 
     def selected_kinds(self, selection: str | None = None) -> list[str]:
-        """Resolve the active workflow kinds for an invocation."""
+        """Resolve the active workflow kinds for an invocation.
+
+        Args:
+            selection: Optional explicit workflow kind selected by the CLI.
+
+        Returns:
+            Active workflow kinds for the current invocation.
+        """
 
         selected = selection or self.default or ALL_WORKFLOW_SELECTION
         if selected == ALL_WORKFLOW_SELECTION:
@@ -478,7 +494,15 @@ def _available_kinds_for_entries(
     entries: Mapping[str, WorkflowEntryT],
     kind_resolver: Callable[[str], str],
 ) -> list[str]:
-    """Return unique workflow kinds for named backend-backed entries."""
+    """Return unique workflow kinds for named backend-backed entries.
+
+    Args:
+        entries: Mapping of configured workflow entries.
+        kind_resolver: Function that resolves a backend identifier to a kind.
+
+    Returns:
+        Ordered unique workflow kinds for the configured entries.
+    """
 
     return _ordered_unique(kind_resolver(entry.backend) for entry in entries.values())
 
@@ -489,7 +513,16 @@ def _select_entries_by_kind(
     active_kinds: set[str],
     kind_resolver: Callable[[str], str],
 ) -> dict[str, WorkflowEntryT]:
-    """Filter named entries down to the active workflow kind set."""
+    """Filter named entries down to the active workflow kind set.
+
+    Args:
+        entries: Mapping of configured workflow entries.
+        active_kinds: Workflow kinds that should remain active.
+        kind_resolver: Function that resolves a backend identifier to a kind.
+
+    Returns:
+        Entries whose backend kind belongs to the active kind set.
+    """
 
     return {
         name: entry

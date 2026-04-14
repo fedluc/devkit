@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import partial
 from pathlib import Path
 
+from ..config.constants import FORMAT_SECTION
 from ..config.models import FormatTargetConfig
 from ..errors import ConfigError
 from ..executor import CommandSpec
@@ -32,7 +33,9 @@ def plan_format(project_root: Path, targets: list[FormatTargetConfig]) -> Workfl
     specs: list[CommandSpec] = []
     request = ToolRequest(project_root=project_root)
     for target in targets:
-        contract = require_backend_contract("format", target.backend, FORMAT_BACKENDS)
+        contract = require_backend_contract(
+            FORMAT_SECTION, target.backend, FORMAT_BACKENDS
+        )
         contract.validate(target)
         specs.extend(contract.plan(target, request))
     return WorkflowPlan(specs=specs)
@@ -45,7 +48,17 @@ def _plan_path_target(
     command_prefix: tuple[str, ...],
     description_template: str,
 ) -> list[CommandSpec]:
-    """Build a formatter command for backends that accept path lists."""
+    """Build a formatter command for backends that accept path lists.
+
+    Args:
+        config: Parsed formatter target configuration.
+        request: Shared tool request with the project root.
+        command_prefix: Base formatter command inserted before args and paths.
+        description_template: User-facing step description template.
+
+    Returns:
+        Command specs for the selected formatter target, including hooks.
+    """
 
     pre_hooks, post_hooks = split_hooks(config.hooks, config.name)
     specs = pre_hooks + [
@@ -61,7 +74,15 @@ def _plan_path_target(
 
 
 def _validate_paths(config: FormatTargetConfig, *, workflow: str) -> None:
-    """Validate path-based formatter configuration."""
+    """Validate path-based formatter configuration.
+
+    Args:
+        config: Parsed formatter target configuration.
+        workflow: Workflow section name used in validation errors.
+
+    Raises:
+        ConfigError: If no formatter paths are configured.
+    """
 
     if not config.paths:
         raise ConfigError(f"`{workflow}.targets.{config.name}.paths` must not be empty")
@@ -70,7 +91,7 @@ def _validate_paths(config: FormatTargetConfig, *, workflow: str) -> None:
 FORMAT_BACKENDS: dict[str, BackendContract[FormatTargetConfig, ToolRequest]] = {
     FORMAT_BLACK: BackendContract(
         name=FORMAT_BLACK,
-        validate=partial(_validate_paths, workflow="format"),
+        validate=partial(_validate_paths, workflow=FORMAT_SECTION),
         plan=partial(
             _plan_path_target,
             command_prefix=(FORMAT_BLACK,),
@@ -79,7 +100,7 @@ FORMAT_BACKENDS: dict[str, BackendContract[FormatTargetConfig, ToolRequest]] = {
     ),
     FORMAT_RUFF: BackendContract(
         name=FORMAT_RUFF,
-        validate=partial(_validate_paths, workflow="format"),
+        validate=partial(_validate_paths, workflow=FORMAT_SECTION),
         plan=partial(
             _plan_path_target,
             command_prefix=("ruff", "format"),
@@ -88,7 +109,7 @@ FORMAT_BACKENDS: dict[str, BackendContract[FormatTargetConfig, ToolRequest]] = {
     ),
     FORMAT_CLANG: BackendContract(
         name=FORMAT_CLANG,
-        validate=partial(_validate_paths, workflow="format"),
+        validate=partial(_validate_paths, workflow=FORMAT_SECTION),
         plan=partial(
             _plan_path_target,
             command_prefix=(FORMAT_CLANG, "-i"),

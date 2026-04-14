@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..config.constants import CPP_WORKFLOW_KIND
+from ..config.constants import BUILD_SECTION, CPP_WORKFLOW_KIND
 from ..config.models import BuildConfig, CppBuildConfig, PythonBuildConfig
 from ..errors import ConfigError
 from ..executor import CommandSpec
@@ -39,7 +39,7 @@ def plan_build(
     specs: list[CommandSpec] = []
     for build_config in config.configured_backends(selection):
         contract = require_backend_contract(
-            "build", build_config.backend, BUILD_BACKENDS
+            BUILD_SECTION, build_config.backend, BUILD_BACKENDS
         )
         contract.validate(build_config)
         specs.extend(

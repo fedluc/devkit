@@ -76,7 +76,14 @@ class BackendContract(Generic[ConfigT, ContextT]):
 def registered_backends(
     registry: Mapping[str, BackendContract[ConfigT, ContextT]],
 ) -> set[str]:
-    """Return the backend identifiers registered in a contract mapping."""
+    """Return backend identifiers from a registry mapping.
+
+    Args:
+        registry: Mapping from backend names to backend contracts.
+
+    Returns:
+        Set of backend identifiers registered in the mapping.
+    """
 
     return set(registry)
 
@@ -86,7 +93,19 @@ def require_backend_contract(
     backend: str,
     registry: Mapping[str, BackendContract[ConfigT, ContextT]],
 ) -> BackendContract[ConfigT, ContextT]:
-    """Resolve a backend contract or raise a stable unsupported-backend error."""
+    """Resolve a backend contract from a workflow registry.
+
+    Args:
+        workflow: Workflow family name used in the error message.
+        backend: Requested backend identifier.
+        registry: Mapping from backend names to backend contracts.
+
+    Returns:
+        Backend contract registered for the requested backend.
+
+    Raises:
+        ConfigError: If the backend is not registered for the workflow.
+    """
 
     try:
         return registry[backend]

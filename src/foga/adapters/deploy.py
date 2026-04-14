@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ..config.constants import DEPLOY_SECTION, TARGETS_KEY
 from ..config.models import DeployTargetConfig
 from ..errors import ConfigError
 from ..executor import CommandSpec
@@ -31,7 +32,9 @@ def plan_deploy(project_root: Path, targets: list[DeployTargetConfig]) -> Workfl
     specs: list[CommandSpec] = []
     request = DeployRequest(project_root=project_root)
     for target in targets:
-        contract = require_backend_contract("deploy", target.backend, DEPLOY_BACKENDS)
+        contract = require_backend_contract(
+            DEPLOY_SECTION, target.backend, DEPLOY_BACKENDS
+        )
         contract.validate(target)
         specs.extend(contract.plan(target, request))
     return WorkflowPlan(specs=specs)
@@ -92,17 +95,27 @@ def _resolve_artifacts(project_root: Path, patterns: list[str]) -> list[str]:
             details={"Patterns": ", ".join(patterns)},
             hint=(
                 "Build the package artifacts first or adjust "
-                "`deploy.targets.*.artifacts`."
+                f"`{DEPLOY_SECTION}.{TARGETS_KEY}.*.artifacts`."
             ),
         )
     return artifacts
 
 
 def _validate_twine(config: DeployTargetConfig) -> None:
-    """Validate Twine deploy target configuration."""
+    """Validate Twine deploy target configuration.
+
+    Args:
+        config: Parsed deploy target configuration.
+
+    Raises:
+        ConfigError: If no deploy artifact patterns are configured.
+    """
 
     if not config.artifacts:
-        raise ConfigError(f"`deploy.targets.{config.name}.artifacts` must not be empty")
+        raise ConfigError(
+            f"`{DEPLOY_SECTION}.{TARGETS_KEY}.{config.name}.artifacts` "
+            "must not be empty"
+        )
 
 
 DEPLOY_BACKENDS: dict[str, BackendContract[DeployTargetConfig, DeployRequest]] = {
