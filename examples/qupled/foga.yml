@@ -94,22 +94,6 @@ lint:
       paths:
         - src/qupled/cpp/src
 
-install:
-  targets:
-    editable:
-      backend: pip
-      path: .
-      editable: true
-    system:
-      backend: apt-get
-      launcher:
-        - sudo
-      args:
-        - -y
-      packages:
-        - cmake
-        - clang
-
 profiles:
   mpi:
     build:
