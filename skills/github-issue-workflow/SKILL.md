@@ -19,12 +19,14 @@ Use this skill when work should start from the GitHub backlog rather than from a
 
 ## Branch and PR Rules
 
+- Check `.codex/` for repository-local git instructions before changing git state.
 - Never do issue work directly on `main`.
 - Create one branch per issue.
 - Start that branch from the latest remote `main` (`origin/main`) unless the user explicitly asks to work from a different base.
 - Use a branch name that includes the issue number and a short slug.
 - Keep the PR scoped to the selected issue.
 - Include a concise PR summary, the verification run, and a closing reference such as `Closes #<issue>`.
+- Use the repository's configured bot account for commits, pushes, pull requests, and PR comments unless the user explicitly asks otherwise.
 - Do not merge the PR yourself unless the user explicitly asks.
 
 ## Issue Selection Policy
@@ -39,6 +41,7 @@ Use this skill when work should start from the GitHub backlog rather than from a
 - Use `gh` for issue and PR operations.
 - Fetch and sync with the latest remote `main` before creating the work branch unless the user explicitly says not to.
 - Use the repository's Python skill and repo guidance for implementation, formatting, linting, testing, and build checks.
+- Perform a local review pass with the help of a subagent before any GitHub interaction.
 - Before opening the PR, ensure the local branch contains only changes for the chosen issue.
 - After opening the PR, provide the PR number and link, summarize the change, summarize verification, and wait for review comments.
 

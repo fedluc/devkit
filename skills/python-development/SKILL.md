@@ -21,6 +21,7 @@ Use this skill to keep Python changes small, typed, testable, and easy to verify
 - Target Python 3.10+ features already used by the repo.
 - Add type hints for public functions and for internal functions when they clarify behavior.
 - When Python docstrings are added or touched, keep them in valid Google style. Use `Args:`, `Returns:`, `Raises:`, and `Attributes:` sections where they add value, and do not leave touched public functions, helpers, or dataclasses with placeholder one-line docstrings when parameters, return values, exceptions, or fields need explanation.
+- Keep diffs consistent with surrounding code and existing module boundaries instead of introducing new multi-purpose modules.
 - Prefer `pathlib.Path`, `dataclass`, and straightforward collections over stringly-typed or deeply nested state.
 - Raise precise exceptions with actionable messages.
 - Keep functions focused. Split only when it improves readability or testability.
@@ -47,6 +48,7 @@ Use judgment:
 
 - Run targeted tests first when a narrow test file covers the change.
 - Run `pytest` for any behavior change, bug fix, or CLI/config update.
+- If CLI or config behavior changes, add or update CLI-facing and config-facing tests in the same change.
 - Run `python -m build` when packaging metadata, dependencies, entry points, or install behavior changes.
 - If a command cannot be run, state that clearly and explain why.
 
@@ -71,6 +73,9 @@ Use judgment:
 - Keep tool configuration in `pyproject.toml` unless the repo has an established alternative.
 - Prefer PEP 621 metadata in `pyproject.toml`.
 - Keep development dependencies and verification commands aligned with documentation and devcontainer setup.
+- `foga` expects a root-level `foga.yml`.
+- When configuration or adapter behavior changes, update `README.md` and relevant documentation.
+- Do not update example configurations unless the user explicitly asks for it.
 
 ## References
 
