@@ -36,12 +36,14 @@ build:
 
 test:
   default: python
+  default_runners: [unit]
   runners:
     unit:
       backend: pytest
       path: tests
 
 docs:
+  default_targets: [python-api]
   targets:
     python-api:
       backend: sphinx
@@ -49,18 +51,21 @@ docs:
       build_dir: docs/_build/html
 
 format:
+  default_targets: [python-style]
   targets:
     python-style:
       backend: ruff-format
       paths: ["src", "tests"]
 
 lint:
+  default_targets: [python-style]
   targets:
     python-style:
       backend: ruff-check
       paths: ["src", "tests"]
 
 install:
+  default_targets: [editable]
   targets:
     editable:
       backend: pip
@@ -68,6 +73,7 @@ install:
       editable: true
 
 deploy:
+  default_targets: [pypi]
   targets:
     pypi:
       backend: twine
@@ -115,6 +121,10 @@ such as `pytest`, `tox`, or `ctest`.
 
 `test.default` may be `cpp`, `python`, or `all`.
 
+`test.default_runners` may list one or more configured runner names. `foga`
+uses them only when `--runner` is omitted, after resolving the active test
+kind.
+
 `test` is optional, but `test.runners` is the important nested section when you
 want `foga test` to run anything.
 
@@ -128,6 +138,9 @@ such as `sphinx`, `mkdocs`, or `doxygen`.
 `docs` is optional, but `docs.targets` is the important nested section when you
 want `foga docs` to run anything.
 
+`docs.default_targets` may list one or more configured target names. `foga`
+uses them only when `--target` is omitted.
+
 Each docs target may also set `launcher` to prepend a command prefix.
 
 ### `format`
@@ -136,6 +149,9 @@ Each docs target may also set `launcher` to prepend a command prefix.
 backend such as `ruff-format`, `black`, or `clang-format`.
 
 `format.default` may be `cpp`, `python`, or `all`.
+
+`format.default_targets` may list one or more configured target names. When
+`format.default` is also set, each default target must belong to that kind.
 
 `format` is optional, but `format.targets` is the important nested section when
 you want `foga format` to run anything.
@@ -148,6 +164,9 @@ Each format target may also set `launcher` to prepend a command prefix.
 such as `ruff-check`, `pylint`, or `clang-tidy`.
 
 `lint.default` may be `cpp`, `python`, or `all`.
+
+`lint.default_targets` may list one or more configured target names. When
+`lint.default` is also set, each default target must belong to that kind.
 
 `lint` is optional, but `lint.targets` is the important nested section when you
 want `foga lint` to run anything.
@@ -162,6 +181,9 @@ backend such as `pip`, `uv`, `poetry`, `npm`, `apt-get`, `brew`, or `yum`.
 `install` is optional, but `install.targets` is the important nested section
 when you want `foga install` to run anything.
 
+`install.default_targets` may list one or more configured target names. `foga`
+uses them only when `--target` is omitted.
+
 Each install target may also set `launcher` to prepend a command prefix. This
 is the intended way to add `sudo` or a container runner for system package
 installers.
@@ -172,6 +194,9 @@ installers.
 the `twine` backend to upload matched artifacts.
 
 `deploy` is optional. Configure it only if you want `foga deploy`.
+
+`deploy.default_targets` may list one or more configured target names. `foga`
+uses them only when `--target` is omitted.
 
 Each deploy target may also set `launcher` to prepend a command prefix.
 

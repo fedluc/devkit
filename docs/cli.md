@@ -36,7 +36,7 @@ foga build all --profile mpi --dry-run              # Preview builds with the mp
 Use `foga test` to run one or more configured test runners:
 
 ```bash
-foga test --dry-run                            # Preview all configured test workflows
+foga test --dry-run                            # Preview the configured default runners or all runners
 foga test python --runner unit --dry-run       # Preview only the Python runner named "unit"
 foga test cpp --dry-run                        # Preview only C++ test workflows
 foga test --profile mpi --dry-run              # Preview test commands with the mpi profile
@@ -47,7 +47,7 @@ foga test --profile mpi --dry-run              # Preview test commands with the 
 Use `foga docs` to run configured documentation targets:
 
 ```bash
-foga docs --dry-run                              # Preview all configured docs targets
+foga docs --dry-run                              # Preview the configured default docs targets or all docs targets
 foga docs --target python-api --dry-run          # Preview one docs target explicitly
 foga docs --profile release --dry-run            # Preview docs generation with a profile
 ```
@@ -57,7 +57,7 @@ foga docs --profile release --dry-run            # Preview docs generation with 
 Use `foga format` to run configured format targets:
 
 ```bash
-foga format --dry-run                                # Preview all configured format targets
+foga format --dry-run                                # Preview the configured default format targets or all format targets
 foga format python --target python-style --dry-run   # Preview one Python formatter target
 foga format cpp --dry-run                            # Preview only C++ format targets
 ```
@@ -67,7 +67,7 @@ foga format cpp --dry-run                            # Preview only C++ format t
 Use `foga lint` to run configured lint targets:
 
 ```bash
-foga lint --dry-run                               # Preview all configured lint targets
+foga lint --dry-run                               # Preview the configured default lint targets or all lint targets
 foga lint python --target python-style --dry-run  # Preview one Python linter target
 foga lint cpp --dry-run                           # Preview only C++ lint targets
 ```
@@ -77,7 +77,7 @@ foga lint cpp --dry-run                           # Preview only C++ lint target
 Use `foga install` to run installation targets:
 
 ```bash
-foga install --dry-run                      # Preview all configured install targets
+foga install --dry-run                      # Preview the configured default install targets or all install targets
 foga install --target editable --dry-run    # Preview one install target explicitly
 foga install --profile release --dry-run    # Preview install commands with a profile
 ```
@@ -87,6 +87,7 @@ foga install --profile release --dry-run    # Preview install commands with a pr
 Use `foga deploy` to run deployment targets:
 
 ```bash
+foga deploy --dry-run                  # Preview the configured default deploy targets or all deploy targets
 foga deploy --target pypi --dry-run    # Preview the pypi upload command
 ```
 
@@ -107,7 +108,9 @@ commands:
 foga inspect                                     # Print the full resolved config
 foga inspect --profile mpi                       # Inspect after applying mpi
 foga inspect build cpp --target cpp_tests        # Inspect C++ build selection
+foga inspect test                                # Inspect default test runner selection
 foga inspect test python --runner unit           # Inspect the selected test runner
+foga inspect deploy                              # Inspect default deploy target selection
 foga inspect deploy --target pypi                # Inspect one deploy target
 foga inspect --full build cpp                    # Show the full document for build
 ```
@@ -134,7 +137,7 @@ Dry-run output shows the planned commands without executing them. Use it to
 verify:
 
 - the selected profile
-- target or runner filtering
+- target or runner filtering, including config defaults
 - generated backend arguments
 - hook ordering
 - working assumptions before changing CI or repository scripts
@@ -148,3 +151,7 @@ verify:
 3. CLI overrides for the active command
 
 CLI overrides are execution-scoped. They do not rewrite the config file.
+
+For commands that support `default_runners` or `default_targets`, `foga`
+applies them only when the matching CLI filter is omitted. Explicit `--runner`
+and `--target` values always take precedence.

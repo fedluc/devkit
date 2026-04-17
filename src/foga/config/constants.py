@@ -19,6 +19,8 @@ PROFILES_SECTION = "profiles"
 RUNNERS_KEY = "runners"
 TARGETS_KEY = "targets"
 LAUNCHER_KEY = "launcher"
+DEFAULT_RUNNERS_KEY = "default_runners"
+DEFAULT_TARGETS_KEY = "default_targets"
 
 # Workflow selections
 CPP_WORKFLOW_KIND = "cpp"

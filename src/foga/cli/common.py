@@ -56,3 +56,17 @@ def select_named_items(
             raise ConfigError(f"Unknown {label}: {name}")
         selected[name] = items[name]
     return selected
+
+
+def resolve_named_items(
+    items: dict[str, object],
+    selected_names: list[str] | None,
+    default_names: list[str],
+    label: str,
+) -> dict[str, object]:
+    """Apply config defaults when the CLI omits a named selection filter."""
+
+    effective_names = (
+        default_names if selected_names is None and default_names else selected_names
+    )
+    return select_named_items(items, effective_names, label)

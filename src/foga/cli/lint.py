@@ -21,7 +21,7 @@ from .common import (
     WORKFLOW_SELECTION_METAVAR,
     WorkflowSelection,
     config_path_from_context,
-    select_named_items,
+    resolve_named_items,
     selection_value,
 )
 
@@ -116,7 +116,12 @@ def run_lint(config: FogaConfig, executor: CommandExecutor, args: LintArgs) -> i
 
     resolved_selection = args.selection or config.linters.default
     selected_by_kind = config.linters.select_targets(args.selection)
-    selected = select_named_items(selected_by_kind, args.targets, "lint target")
+    selected = resolve_named_items(
+        selected_by_kind,
+        args.targets,
+        config.linters.default_targets,
+        "lint target",
+    )
     plan = plan_lint(config.project_root, list(selected.values()))
     if not plan.specs:
         if resolved_selection and resolved_selection != ALL_WORKFLOW_SELECTION:

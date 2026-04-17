@@ -21,7 +21,7 @@ from .common import (
     WORKFLOW_SELECTION_METAVAR,
     WorkflowSelection,
     config_path_from_context,
-    select_named_items,
+    resolve_named_items,
     selection_value,
 )
 
@@ -85,7 +85,12 @@ def run_test(config: FogaConfig, executor: CommandExecutor, args: TestArgs) -> i
     """Execute configured test workflows."""
     resolved_selection = args.selection or config.tests.default
     selected_by_kind = config.tests.select_runners(args.selection)
-    selected = select_named_items(selected_by_kind, args.runner, "test runner")
+    selected = resolve_named_items(
+        selected_by_kind,
+        args.runner,
+        config.tests.default_runners,
+        "test runner",
+    )
     plan = plan_tests(list(selected.values()))
     if not plan.specs:
         if resolved_selection and resolved_selection != ALL_WORKFLOW_SELECTION:

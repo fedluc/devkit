@@ -12,7 +12,7 @@ from ..config.loading import load_config
 from ..config.models import FogaConfig
 from ..errors import ConfigError
 from ..executor import CommandExecutor
-from .common import config_path_from_context, select_named_items
+from .common import config_path_from_context, resolve_named_items
 
 
 @dataclass(slots=True)
@@ -85,7 +85,12 @@ def run_docs(config: FogaConfig, executor: CommandExecutor, args: DocsArgs) -> i
         ConfigError: If no docs workflows are configured.
     """
 
-    selected = select_named_items(config.docs.targets, args.targets, "docs target")
+    selected = resolve_named_items(
+        config.docs.targets,
+        args.targets,
+        config.docs.default_targets,
+        "docs target",
+    )
     plan = plan_docs(config.project_root, list(selected.values()))
     if not plan.specs:
         raise ConfigError("No docs workflows configured")

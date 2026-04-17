@@ -218,11 +218,14 @@ class TestConfig(WorkflowSelectionConfig):
     Attributes:
         default: Default test kind selection used when the CLI does not request
             an explicit test mode.
+        default_runners: Default runner names selected when the CLI omits
+            ``--runner``.
         runners: Parsed test runners keyed by runner name.
     """
 
     __test__ = False
 
+    default_runners: list[str] = field(default_factory=list)
     runners: dict[str, TestRunnerConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -310,9 +313,12 @@ class FormatConfig(WorkflowSelectionConfig):
     Attributes:
         default: Default format kind selection used when the CLI does not
             request an explicit format mode.
+        default_targets: Default target names selected when the CLI omits
+            ``--target``.
         targets: Parsed format targets keyed by target name.
     """
 
+    default_targets: list[str] = field(default_factory=list)
     targets: dict[str, FormatTargetConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -365,9 +371,12 @@ class LintConfig(WorkflowSelectionConfig):
     Attributes:
         default: Default lint kind selection used when the CLI does not
             request an explicit lint mode.
+        default_targets: Default target names selected when the CLI omits
+            ``--target``.
         targets: Parsed lint targets keyed by target name.
     """
 
+    default_targets: list[str] = field(default_factory=list)
     targets: dict[str, LintTargetConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -474,10 +483,61 @@ class DocsConfig:
     """Aggregate docs configuration for configured documentation workflows.
 
     Attributes:
+        default_targets: Default docs target names selected when the CLI omits
+            ``--target``.
         targets: Parsed docs targets keyed by target name.
     """
 
+    default_targets: list[str] = field(default_factory=list)
     targets: dict[str, DocsTargetConfig] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class InstallConfig:
+    """Aggregate install configuration for configured installation workflows.
+
+    Attributes:
+        default_targets: Default install target names selected when the CLI omits
+            ``--target``.
+        targets: Parsed install targets keyed by target name.
+    """
+
+    default_targets: list[str] = field(default_factory=list)
+    targets: dict[str, InstallTargetConfig] = field(default_factory=dict)
+
+    def __getitem__(self, name: str) -> InstallTargetConfig:
+        """Return one configured install target by name."""
+
+        return self.targets[name]
+
+    def __iter__(self):
+        """Iterate install target names in configuration order."""
+
+        return iter(self.targets)
+
+
+@dataclass(frozen=True)
+class DeployConfig:
+    """Aggregate deploy configuration for configured deployment workflows.
+
+    Attributes:
+        default_targets: Default deploy target names selected when the CLI omits
+            ``--target``.
+        targets: Parsed deploy targets keyed by target name.
+    """
+
+    default_targets: list[str] = field(default_factory=list)
+    targets: dict[str, DeployTargetConfig] = field(default_factory=dict)
+
+    def __getitem__(self, name: str) -> DeployTargetConfig:
+        """Return one configured deploy target by name."""
+
+        return self.targets[name]
+
+    def __iter__(self):
+        """Iterate deploy target names in configuration order."""
+
+        return iter(self.targets)
 
 
 @dataclass(frozen=True)
@@ -514,8 +574,8 @@ class FogaConfig:
         docs: Parsed documentation target configuration.
         formatters: Parsed format target configuration and defaults.
         linters: Parsed lint target configuration and defaults.
-        install: Parsed install configuration keyed by target name.
-        deploy: Parsed deploy configuration keyed by target name.
+        install: Parsed install configuration and defaults.
+        deploy: Parsed deploy configuration and defaults.
         clean: Parsed clean configuration.
         raw: Raw merged configuration mapping after profile application.
     """
@@ -527,8 +587,8 @@ class FogaConfig:
     docs: DocsConfig
     formatters: FormatConfig
     linters: LintConfig
-    install: dict[str, InstallTargetConfig]
-    deploy: dict[str, DeployTargetConfig]
+    install: InstallConfig
+    deploy: DeployConfig
     clean: CleanConfig
     raw: dict[str, Any] = field(repr=False)
 
