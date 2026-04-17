@@ -15,23 +15,9 @@ Read them in order:
 4. [`04-pybind11-profiles`](04-pybind11-profiles/README.md): adds profile-driven
    debug and release C++ build modes to the tested mixed project.
 
-Run them from the repository root with the cross-platform launcher:
-
-```bash
-python run-example.py python-only
-python run-example.py pybind11-hello
-python run-example.py pybind11-tests
-python run-example.py pybind11-profiles
-```
-
-Those commands build an example-specific Docker image from the example
-directory and run the example's `run_example.py` walkthrough script by
-default, so the host machine does not need the example toolchain. Each example
-`pyproject.toml` declares `foga` as a dependency, and the Dockerfile installs
-it through `uv sync` before running any commands. To inspect the scripted
-walkthrough steps for one example, run `python run-example.py <name>
---list-steps`. If you already have the dependencies and explicitly want a
-local run, use `python run-example.py --mode host <name>`.
+Each tutorial folder is self-contained. You can copy any one of them to another
+location, run its `run-docker.sh` script, and then exercise the example from
+inside the interactive container session.
 
 Once these examples feel familiar, move to the larger real-world references in
 [`examples/qupled`](../qupled/README.md) and

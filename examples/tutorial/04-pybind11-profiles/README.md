@@ -14,17 +14,37 @@ It shows:
 Files:
 
 - [`Dockerfile`](Dockerfile)
+- [`run-docker.sh`](run-docker.sh)
 - [`foga.yml`](foga.yml)
 - [`pyproject.toml`](pyproject.toml)
 - [`cpp/`](cpp)
 - [`src/hello_bindings`](src/hello_bindings)
 - [`tests/`](tests)
-- [`run_example.py`](run_example.py)
 
-Typical usage from the repository root:
+## Start the example
 
 ```bash
-python run-example.py pybind11-profiles
-python run-example.py pybind11-profiles --list-steps
-python run-example.py pybind11-profiles build-release test-release
+./run-docker.sh
+```
+
+## Inside the container
+
+Run these commands to verify the example:
+
+```bash
+foga validate
+foga install --target dev
+foga build python
+foga build cpp
+foga build --profile release cpp
+foga test
+foga test --profile release cpp
+foga lint
+```
+
+Useful follow-up commands:
+
+```bash
+foga inspect --profile release build cpp
+foga clean
 ```

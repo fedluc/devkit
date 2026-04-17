@@ -20,39 +20,16 @@ without forcing you to absorb a large real-world repository first.
 
 ## How to run them
 
-Run the tutorial examples from the repository root with one cross-platform
-launcher:
+Each tutorial directory is self-contained. You can copy one folder anywhere,
+run its `run-docker.sh` script, and then use the interactive container session
+as the example workspace.
 
-```bash
-python run-example.py python-only
-python run-example.py pybind11-hello
-python run-example.py pybind11-tests
-python run-example.py pybind11-profiles
-```
+The script always rebuilds the Docker image with `--no-cache` and starts a
+fresh container in `/workspace/example`, so users do not need any local Python
+or C++ toolchain beyond Docker itself.
 
-Those commands build the example-specific Docker image from the example
-directory and execute the example's `run_example.py` walkthrough script in a
-container by default. Each example installs `foga` from PyPI through its own
-`pyproject.toml` and `uv sync`, so the image no longer depends on a copy of
-this repository. To inspect the named walkthrough steps for one example, run:
-
-```bash
-python run-example.py pybind11-profiles --list-steps
-```
-
-To run specific guided steps instead of the full walkthrough, pass the step
-names after the example name:
-
-```bash
-python run-example.py pybind11-profiles build-release test-release
-```
-
-If you intentionally want to run an example directly on the current machine, use
-`--mode host`:
-
-```bash
-python run-example.py --mode host pybind11-tests lint
-```
+The per-example README lists the concrete `foga` commands to run once the shell
+opens.
 
 ## After the tutorials
 

@@ -6,24 +6,40 @@ build separate from the Python package build.
 It shows:
 
 - a small shared C++ greeting implementation
-- a standalone CMake executable built through `build.cpp`
-- a Python package built through `build.python`
+- a standalone CMake executable built through `build cpp`
+- a Python package built through `build python`
 - a Dockerfile that installs `foga` through `uv sync` and native tooling through
   `foga install --target system`
 
 Files:
 
 - [`Dockerfile`](Dockerfile)
+- [`run-docker.sh`](run-docker.sh)
 - [`foga.yml`](foga.yml)
 - [`pyproject.toml`](pyproject.toml)
 - [`cpp/`](cpp)
 - [`src/hello_bindings`](src/hello_bindings)
-- [`run_example.py`](run_example.py)
 
-Typical usage from the repository root:
+## Start the example
 
 ```bash
-python run-example.py pybind11-hello
-python run-example.py pybind11-hello --list-steps
-python run-example.py pybind11-hello build-cpp build-python
+./run-docker.sh
+```
+
+## Inside the container
+
+Run these commands to verify the example:
+
+```bash
+foga validate
+foga install --target dev
+foga build cpp
+foga build python
+```
+
+Useful follow-up commands:
+
+```bash
+foga inspect build cpp
+foga clean
 ```
