@@ -105,15 +105,13 @@ def inspect_build_command(
     ] = None,
 ) -> int:
     """Inspect resolved build configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="build",
         selection=selection_value(selection),
         targets=targets,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("test")
@@ -139,15 +137,13 @@ def inspect_test_command(
     ] = None,
 ) -> int:
     """Inspect resolved test configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="test",
         selection=selection_value(selection),
         runner=runner,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("deploy")
@@ -166,14 +162,12 @@ def inspect_deploy_command(
     ] = None,
 ) -> int:
     """Inspect resolved deploy configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="deploy",
         targets=targets,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("docs")
@@ -192,14 +186,12 @@ def inspect_docs_command(
     ] = None,
 ) -> int:
     """Inspect resolved docs configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="docs",
         targets=targets,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("format")
@@ -225,15 +217,13 @@ def inspect_format_command(
     ] = None,
 ) -> int:
     """Inspect resolved format configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="format",
         selection=selection_value(selection),
         targets=targets,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("install")
@@ -252,14 +242,12 @@ def inspect_install_command(
     ] = None,
 ) -> int:
     """Inspect resolved install configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="install",
         targets=targets,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 @inspect_app.command("lint")
@@ -285,15 +273,13 @@ def inspect_lint_command(
     ] = None,
 ) -> int:
     """Inspect resolved lint configuration."""
-    base_args = _inspect_args_from_context(ctx)
-    args = InspectArgs(
-        profile=base_args.profile,
-        full=base_args.full or full,
+    return _run_inspect_subcommand(
+        ctx,
+        full=full,
         inspect_command="lint",
         selection=selection_value(selection),
         targets=targets,
     )
-    return run_inspect(config_path_from_context(ctx), args)
 
 
 def _inspect_args_from_context(ctx: typer.Context) -> InspectArgs:
@@ -302,6 +288,30 @@ def _inspect_args_from_context(ctx: typer.Context) -> InspectArgs:
     if not isinstance(inspect_args, InspectArgs):
         raise RuntimeError("Inspect context was not initialized")
     return inspect_args
+
+
+def _run_inspect_subcommand(
+    ctx: typer.Context,
+    *,
+    full: bool,
+    inspect_command: str,
+    selection: str | None = None,
+    targets: list[str] | None = None,
+    runner: list[str] | None = None,
+) -> int:
+    """Run an inspect subcommand with the shared parent inspect options."""
+    base_args = _inspect_args_from_context(ctx)
+    return run_inspect(
+        config_path_from_context(ctx),
+        InspectArgs(
+            profile=base_args.profile,
+            full=base_args.full or full,
+            inspect_command=inspect_command,
+            selection=selection,
+            targets=targets,
+            runner=runner,
+        ),
+    )
 
 
 def run_inspect(config_path: str | Path, args: InspectArgs) -> int:

@@ -46,7 +46,6 @@ test:
 ```bash
 foga validate
 foga inspect
-foga inspect lint
 foga build --dry-run
 foga test --dry-run
 foga docs --dry-run
