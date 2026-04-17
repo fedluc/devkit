@@ -284,8 +284,8 @@ def _validate_pip(config: InstallTargetConfig) -> None:
     _validate_pip_like(config)
 
 
-def _validate_uv_sync(config: InstallTargetConfig) -> None:
-    """Validate uv targets that use project sync semantics."""
+def _validate_uv(config: InstallTargetConfig) -> None:
+    """Validate uv install targets that always use project sync semantics."""
 
     _reject_path(config, INSTALL_UV)
     _reject_editable(config, INSTALL_UV)
@@ -294,12 +294,6 @@ def _validate_uv_sync(config: InstallTargetConfig) -> None:
             f"`{INSTALL_SECTION}.{TARGETS_KEY}.{config.name}.packages` is not "
             f"supported for the `{INSTALL_UV}` backend"
         )
-
-
-def _validate_uv(config: InstallTargetConfig) -> None:
-    """Validate uv install targets that always use project sync semantics."""
-
-    _validate_uv_sync(config)
 
 
 def _validate_poetry(config: InstallTargetConfig) -> None:
