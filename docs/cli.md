@@ -110,14 +110,18 @@ foga inspect --profile mpi                       # Inspect after applying mpi
 foga inspect build cpp --target cpp_tests        # Inspect C++ build selection
 foga inspect test                                # Inspect default test runner selection
 foga inspect test python --runner unit           # Inspect the selected test runner
+foga inspect docs --target python-api            # Inspect one docs target
+foga inspect format python --target python-style # Inspect one format target
+foga inspect lint                                # Inspect default lint target selection
+foga inspect install                             # Inspect default install target selection
 foga inspect deploy                              # Inspect default deploy target selection
 foga inspect deploy --target pypi                # Inspect one deploy target
 foga inspect --full build cpp                    # Show the full document for build
 ```
 
 Top-level `foga inspect` prints the full resolved config. Command-specific
-inspection prints a concise summary plus the relevant config fragment unless
-`--full` is set.
+inspection prints a concise summary, the relevant config fragment, and the
+planned commands for the selected workflow unless `--full` is set.
 
 ## Dry-run
 

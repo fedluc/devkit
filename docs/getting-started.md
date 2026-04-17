@@ -42,6 +42,7 @@ These examples assume you are running `foga` from a project root that contains
 ```bash
 foga validate                  # Check that foga.yml is well-formed
 foga inspect                   # Print the resolved configuration
+foga inspect format            # Inspect selected format config and commands
 foga build --dry-run           # Show planned build commands without executing
 foga test --dry-run            # Show planned test commands without executing
 foga docs --dry-run            # Show planned docs commands without executing
@@ -58,9 +59,12 @@ The usual workflow for adopting `foga` in a repository is:
 1. Create `foga.yml` with your project name and at least one build or test
    workflow.
 2. Run `foga validate` until the configuration passes.
-3. Run `foga inspect` to check the merged effective config.
+3. Run `foga inspect` to check the merged effective config, or a command-specific
+   inspect such as `foga inspect test` to preview the resolved workflow and
+   planned commands.
 4. Use a dry-run command such as `foga build --dry-run` or
-   `foga test --dry-run` to inspect generated commands before execution.
+   `foga test --dry-run` when you want the execution-oriented preview of the
+   exact commands that would run.
 5. Run the real command once the plan looks right.
 6. Add profiles only after the base config is working.
 

@@ -103,7 +103,6 @@ def _plan_install_command(
     return specs
 
 
-
 def _uv_sync_options(config: InstallTargetConfig) -> list[str]:
     """Return uv sync flags derived from uv-specific install fields."""
 

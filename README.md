@@ -15,7 +15,7 @@ install, deploy, inspect, and cleanup workflows.
 - generate Python and C++ documentation through one CLI
 - install local packages and external dependencies through one CLI
 - switch environment-specific settings with named profiles
-- inspect the resolved config before running anything
+- inspect the resolved config and planned commands before running anything
 - keep escape hatches explicit through structured hooks
 
 ## Install
@@ -46,6 +46,7 @@ test:
 ```bash
 foga validate
 foga inspect
+foga inspect lint
 foga build --dry-run
 foga test --dry-run
 foga docs --dry-run

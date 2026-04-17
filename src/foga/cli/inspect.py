@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +12,13 @@ from typing import Annotated
 import typer
 import yaml
 
+from ..adapters.build import plan_build
+from ..adapters.deploy import plan_deploy
+from ..adapters.docs import plan_docs
+from ..adapters.formatting import plan_format
+from ..adapters.install import plan_install
+from ..adapters.linting import plan_lint
+from ..adapters.testing import plan_tests
 from ..config.constants import (
     ALL_WORKFLOW_SELECTION,
     CPP_WORKFLOW_KIND,
@@ -168,6 +176,126 @@ def inspect_deploy_command(
     return run_inspect(config_path_from_context(ctx), args)
 
 
+@inspect_app.command("docs")
+def inspect_docs_command(
+    ctx: typer.Context,
+    full: Annotated[
+        bool,
+        typer.Option("--full", help="Show the full resolved configuration document."),
+    ] = False,
+    targets: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            help="Show only the named docs targets in the selection summary.",
+        ),
+    ] = None,
+) -> int:
+    """Inspect resolved docs configuration."""
+    base_args = _inspect_args_from_context(ctx)
+    args = InspectArgs(
+        profile=base_args.profile,
+        full=base_args.full or full,
+        inspect_command="docs",
+        targets=targets,
+    )
+    return run_inspect(config_path_from_context(ctx), args)
+
+
+@inspect_app.command("format")
+def inspect_format_command(
+    ctx: typer.Context,
+    full: Annotated[
+        bool,
+        typer.Option("--full", help="Show the full resolved configuration document."),
+    ] = False,
+    selection: Annotated[
+        WorkflowSelection | None,
+        typer.Argument(
+            help="Resolve the selected format kind.",
+            metavar=WORKFLOW_SELECTION_METAVAR,
+        ),
+    ] = None,
+    targets: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            help="Show only the named format targets in the selection summary.",
+        ),
+    ] = None,
+) -> int:
+    """Inspect resolved format configuration."""
+    base_args = _inspect_args_from_context(ctx)
+    args = InspectArgs(
+        profile=base_args.profile,
+        full=base_args.full or full,
+        inspect_command="format",
+        selection=selection_value(selection),
+        targets=targets,
+    )
+    return run_inspect(config_path_from_context(ctx), args)
+
+
+@inspect_app.command("install")
+def inspect_install_command(
+    ctx: typer.Context,
+    full: Annotated[
+        bool,
+        typer.Option("--full", help="Show the full resolved configuration document."),
+    ] = False,
+    targets: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            help="Show only the named install targets in the selection summary.",
+        ),
+    ] = None,
+) -> int:
+    """Inspect resolved install configuration."""
+    base_args = _inspect_args_from_context(ctx)
+    args = InspectArgs(
+        profile=base_args.profile,
+        full=base_args.full or full,
+        inspect_command="install",
+        targets=targets,
+    )
+    return run_inspect(config_path_from_context(ctx), args)
+
+
+@inspect_app.command("lint")
+def inspect_lint_command(
+    ctx: typer.Context,
+    full: Annotated[
+        bool,
+        typer.Option("--full", help="Show the full resolved configuration document."),
+    ] = False,
+    selection: Annotated[
+        WorkflowSelection | None,
+        typer.Argument(
+            help="Resolve the selected lint kind.",
+            metavar=WORKFLOW_SELECTION_METAVAR,
+        ),
+    ] = None,
+    targets: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            help="Show only the named lint targets in the selection summary.",
+        ),
+    ] = None,
+) -> int:
+    """Inspect resolved lint configuration."""
+    base_args = _inspect_args_from_context(ctx)
+    args = InspectArgs(
+        profile=base_args.profile,
+        full=base_args.full or full,
+        inspect_command="lint",
+        selection=selection_value(selection),
+        targets=targets,
+    )
+    return run_inspect(config_path_from_context(ctx), args)
+
+
 def _inspect_args_from_context(ctx: typer.Context) -> InspectArgs:
     """Return the shared inspect arguments set by the inspect callback."""
     inspect_args = ctx.parent.obj if ctx.parent is not None else None
@@ -194,6 +322,7 @@ def run_inspect(config_path: str | Path, args: InspectArgs) -> int:
     active_profile = _resolve_active_profile_name(config_path, args.profile)
     context = _build_context(config, args)
     resolved_config = _build_resolved_config(config, args)
+    planned_commands = _build_planned_commands(config, args)
 
     document = _build_output_document(
         config=config,
@@ -201,6 +330,7 @@ def run_inspect(config_path: str | Path, args: InspectArgs) -> int:
         active_profile=active_profile,
         context=context,
         resolved_config=resolved_config,
+        planned_commands=planned_commands,
     )
     _emit_document(document)
     return 0
@@ -212,6 +342,7 @@ def _build_output_document(
     active_profile: str | None,
     context: dict[str, object],
     resolved_config: dict[str, object],
+    planned_commands: list[str],
 ) -> dict[str, object]:
     """Build the inspect output document.
 
@@ -231,14 +362,18 @@ def _build_output_document(
             "active_profile": active_profile,
             "summary": context,
             "effective_config": _build_effective_config(config, args, resolved_config),
+            "planned_commands": planned_commands,
         }
 
-    return {
+    document = {
         "project_root": str(config.project_root),
         "active_profile": active_profile,
         "context": context,
         "resolved_config": resolved_config,
     }
+    if args.inspect_command:
+        document["planned_commands"] = planned_commands
+    return document
 
 
 def _validate_build_target_override(config: FogaConfig, args: InspectArgs) -> None:
@@ -275,6 +410,14 @@ def _build_context(config: FogaConfig, args: InspectArgs) -> dict[str, object]:
         return _build_test_context(config, args)
     if args.inspect_command == "deploy":
         return _build_deploy_context(config, args)
+    if args.inspect_command == "docs":
+        return _build_docs_context(config, args)
+    if args.inspect_command == "format":
+        return _build_format_context(config, args)
+    if args.inspect_command == "install":
+        return _build_install_context(config, args)
+    if args.inspect_command == "lint":
+        return _build_lint_context(config, args)
     return {"command": "inspect"}
 
 
@@ -341,6 +484,46 @@ def _build_deploy_context(config: FogaConfig, args: InspectArgs) -> dict[str, ob
     selected_targets = config.deploy.selected_targets(args.targets)
     return {
         "command": "deploy",
+        "targets": list(selected_targets),
+    }
+
+
+def _build_docs_context(config: FogaConfig, args: InspectArgs) -> dict[str, object]:
+    """Build inspect metadata for the docs subcommand."""
+    selected_targets = config.docs.selected_targets(args.targets)
+    return {
+        "command": "docs",
+        "targets": list(selected_targets),
+    }
+
+
+def _build_format_context(config: FogaConfig, args: InspectArgs) -> dict[str, object]:
+    """Build inspect metadata for the format subcommand."""
+    selected_targets = config.formatters.selected_targets(args.selection, args.targets)
+    return {
+        "command": "format",
+        "selection": args.selection
+        or config.formatters.default
+        or ALL_WORKFLOW_SELECTION,
+        "targets": list(selected_targets),
+    }
+
+
+def _build_install_context(config: FogaConfig, args: InspectArgs) -> dict[str, object]:
+    """Build inspect metadata for the install subcommand."""
+    selected_targets = config.install.selected_targets(args.targets)
+    return {
+        "command": "install",
+        "targets": list(selected_targets),
+    }
+
+
+def _build_lint_context(config: FogaConfig, args: InspectArgs) -> dict[str, object]:
+    """Build inspect metadata for the lint subcommand."""
+    selected_targets = config.linters.selected_targets(args.selection, args.targets)
+    return {
+        "command": "lint",
+        "selection": args.selection or config.linters.default or ALL_WORKFLOW_SELECTION,
         "targets": list(selected_targets),
     }
 
@@ -426,6 +609,14 @@ def _build_effective_config(
         return _build_effective_test_config(config, args, resolved_config)
     if args.inspect_command == "deploy":
         return _build_effective_deploy_config(config, args, resolved_config)
+    if args.inspect_command == "docs":
+        return _build_effective_docs_config(config, args, resolved_config)
+    if args.inspect_command == "format":
+        return _build_effective_format_config(config, args, resolved_config)
+    if args.inspect_command == "install":
+        return _build_effective_install_config(config, args, resolved_config)
+    if args.inspect_command == "lint":
+        return _build_effective_lint_config(config, args, resolved_config)
     return resolved_config
 
 
@@ -472,31 +663,14 @@ def _build_effective_test_config(
     Returns:
         Test-specific config fragment.
     """
-    test_section = resolved_config.get("test")
-    if not isinstance(test_section, dict):
-        return {}
-
     selected_runners = config.tests.selected_runners(args.selection, args.runner)
-    runners_section = test_section.get("runners")
-    if not isinstance(runners_section, dict):
-        effective_test = {"runners": {}}
-        if "default" in test_section:
-            effective_test["default"] = test_section["default"]
-        if "default_runners" in test_section:
-            effective_test["default_runners"] = test_section["default_runners"]
-        return {"test": effective_test}
-
-    effective_test = {"runners": {}}
-    if "default" in test_section:
-        effective_test["default"] = test_section["default"]
-    if "default_runners" in test_section:
-        effective_test["default_runners"] = test_section["default_runners"]
-    effective_test["runners"] = {
-        name: runners_section[name]
-        for name in selected_runners
-        if name in runners_section
-    }
-    return {"test": effective_test}
+    return _build_effective_named_entries_config(
+        resolved_config,
+        section_name="test",
+        entries_key="runners",
+        selected_names=list(selected_runners),
+        default_keys=("default", "default_runners"),
+    )
 
 
 def _build_effective_deploy_config(
@@ -512,28 +686,126 @@ def _build_effective_deploy_config(
     Returns:
         Deploy-specific config fragment.
     """
-    deploy_section = resolved_config.get("deploy")
-    if not isinstance(deploy_section, dict):
+    selected_targets = config.deploy.selected_targets(args.targets)
+    return _build_effective_named_entries_config(
+        resolved_config,
+        section_name="deploy",
+        entries_key="targets",
+        selected_names=list(selected_targets),
+        default_keys=("default_targets",),
+    )
+
+
+def _build_effective_docs_config(
+    config: FogaConfig, args: InspectArgs, resolved_config: dict[str, object]
+) -> dict[str, object]:
+    """Build the concise config fragment for docs inspection."""
+    selected_targets = config.docs.selected_targets(args.targets)
+    return _build_effective_named_entries_config(
+        resolved_config,
+        section_name="docs",
+        entries_key="targets",
+        selected_names=list(selected_targets),
+        default_keys=("default_targets",),
+    )
+
+
+def _build_effective_format_config(
+    config: FogaConfig, args: InspectArgs, resolved_config: dict[str, object]
+) -> dict[str, object]:
+    """Build the concise config fragment for format inspection."""
+    selected_targets = config.formatters.selected_targets(args.selection, args.targets)
+    return _build_effective_named_entries_config(
+        resolved_config,
+        section_name="format",
+        entries_key="targets",
+        selected_names=list(selected_targets),
+        default_keys=("default", "default_targets"),
+    )
+
+
+def _build_effective_install_config(
+    config: FogaConfig, args: InspectArgs, resolved_config: dict[str, object]
+) -> dict[str, object]:
+    """Build the concise config fragment for install inspection."""
+    selected_targets = config.install.selected_targets(args.targets)
+    return _build_effective_named_entries_config(
+        resolved_config,
+        section_name="install",
+        entries_key="targets",
+        selected_names=list(selected_targets),
+        default_keys=("default_targets",),
+    )
+
+
+def _build_effective_lint_config(
+    config: FogaConfig, args: InspectArgs, resolved_config: dict[str, object]
+) -> dict[str, object]:
+    """Build the concise config fragment for lint inspection."""
+    selected_targets = config.linters.selected_targets(args.selection, args.targets)
+    return _build_effective_named_entries_config(
+        resolved_config,
+        section_name="lint",
+        entries_key="targets",
+        selected_names=list(selected_targets),
+        default_keys=("default", "default_targets"),
+    )
+
+
+def _build_effective_named_entries_config(
+    resolved_config: dict[str, object],
+    *,
+    section_name: str,
+    entries_key: str,
+    selected_names: list[str],
+    default_keys: tuple[str, ...],
+) -> dict[str, object]:
+    """Return the filtered section for named-target and named-runner workflows."""
+    section = resolved_config.get(section_name)
+    if not isinstance(section, dict):
         return {}
 
-    selected_targets = config.deploy.selected_targets(args.targets)
-    targets_section = deploy_section.get("targets")
-    if not isinstance(targets_section, dict):
-        effective_deploy = {"targets": {}}
-        if "default_targets" in deploy_section:
-            effective_deploy["default_targets"] = deploy_section["default_targets"]
-        return {"deploy": effective_deploy}
-
-    effective_deploy: dict[str, object] = {
-        "targets": {
-            name: targets_section[name]
-            for name in selected_targets
-            if name in targets_section
-        }
+    effective_section: dict[str, object] = {
+        entries_key: {},
     }
-    if "default_targets" in deploy_section:
-        effective_deploy["default_targets"] = deploy_section["default_targets"]
-    return {"deploy": effective_deploy}
+    for default_key in default_keys:
+        if default_key in section:
+            effective_section[default_key] = section[default_key]
+
+    entries = section.get(entries_key)
+    if isinstance(entries, dict):
+        effective_section[entries_key] = {
+            name: entries[name] for name in selected_names if name in entries
+        }
+    return {section_name: effective_section}
+
+
+def _build_planned_commands(config: FogaConfig, args: InspectArgs) -> list[str]:
+    """Build shell-rendered command previews for the active inspect context."""
+    if args.inspect_command == "build":
+        plan = plan_build(config.build, args.selection, args.targets)
+    elif args.inspect_command == "test":
+        selected = config.tests.selected_runners(args.selection, args.runner)
+        plan = plan_tests(list(selected.values()))
+    elif args.inspect_command == "deploy":
+        selected = config.deploy.selected_targets(args.targets)
+        plan = plan_deploy(config.project_root, list(selected.values()))
+    elif args.inspect_command == "docs":
+        selected = config.docs.selected_targets(args.targets)
+        plan = plan_docs(config.project_root, list(selected.values()))
+    elif args.inspect_command == "format":
+        selected = config.formatters.selected_targets(args.selection, args.targets)
+        plan = plan_format(config.project_root, list(selected.values()))
+    elif args.inspect_command == "install":
+        selected = config.install.selected_targets(args.targets)
+        plan = plan_install(config.project_root, list(selected.values()))
+    elif args.inspect_command == "lint":
+        selected = config.linters.selected_targets(args.selection, args.targets)
+        plan = plan_lint(config.project_root, list(selected.values()))
+    else:
+        return []
+
+    return [shlex.join(spec.command) for spec in plan.specs]
 
 
 def _resolve_active_profile_name(
