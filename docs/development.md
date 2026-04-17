@@ -56,7 +56,8 @@ uv lock
 
 The repository includes a devcontainer in
 [`/.devcontainer/devcontainer.json`](https://github.com/fedluc/foga/blob/main/.devcontainer/devcontainer.json).
-When opened in a compatible environment, it installs:
+When opened in a compatible environment, it installs the repository toolchain,
+GitHub CLI, and Codex:
 
 - Python 3.11
 - `uv`
@@ -65,4 +66,4 @@ When opened in a compatible environment, it installs:
 - common C++ tooling dependencies used by package workflows:
   `build-essential`, `clang`, `cmake`, `ninja-build`, `pkg-config`, and `gdb`
 - GitHub CLI (`gh`) for authenticated GitHub API and repository operations
-- Codex via `npm`
+- Codex (`@openai/codex`) via `npm`
