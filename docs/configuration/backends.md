@@ -203,25 +203,10 @@ mean:
 
 ### `uv`
 
-`install.targets.<name>.backend: uv` requires an explicit `command` field with
-either `install` or `sync`.
+`install.targets.<name>.backend: uv` runs `uv sync` for uv-managed projects.
 
-When `command: install`, `foga` runs `uv pip install` and accepts the same
-fields as `pip`:
+Its fields mean:
 
-- `command`: must be `install`
-- `path`: optional local path to install, commonly `.`
-- `packages`: optional package names or specifiers appended after the command
-- `editable`: optional boolean that adds `-e`; requires `path`
-- `launcher`: optional command prefix prepended to the install command
-- `args`: extra flags appended before packages or paths
-- `env`: environment variables added to the install command
-- `hooks`: pre/post commands run around the install target
-
-When `command: sync`, `foga` runs `uv sync` and accepts these uv-specific
-fields:
-
-- `command`: must be `sync`
 - `groups`: optional dependency groups passed as repeated `--group` flags
 - `extras`: optional extras passed as repeated `--extra` flags
 - `install_project`: optional boolean that controls whether the local project is
@@ -231,8 +216,9 @@ fields:
 - `env`: environment variables added to the install command
 - `hooks`: pre/post commands run around the install target
 
-When using uv project sync, `path`, `packages`, and `editable` are not
-supported.
+The `uv` backend is project-oriented. `path`, `packages`, and `editable` are
+not supported; use the `pip` backend for pip-style installs such as
+`requirements.txt`, local paths, or editable installs.
 
 Example:
 
@@ -241,7 +227,6 @@ install:
   targets:
     dev-python:
       backend: uv
-      command: sync
       groups: ["dev"]
       extras: ["test", "docs"]
       install_project: false

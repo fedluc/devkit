@@ -965,7 +965,6 @@ install:
   targets:
     dev-python:
       backend: uv
-      command: sync
       groups: ["dev"]
       extras: ["test", "docs"]
       install_project: false
@@ -974,34 +973,9 @@ install:
 
     config = load_config(config_path)
 
-    assert config.install["dev-python"].command == "sync"
     assert config.install["dev-python"].groups == ["dev"]
     assert config.install["dev-python"].extras == ["test", "docs"]
     assert config.install["dev-python"].install_project is False
-
-
-def test_load_config_rejects_uv_targets_without_an_explicit_command(
-    tmp_path: Path,
-) -> None:
-    """Uv install targets must choose install or sync explicitly."""
-    config_path = write_config(
-        tmp_path,
-        """
-project:
-  name: demo
-install:
-  targets:
-    dev-python:
-      backend: uv
-      groups: ["dev"]
-""",
-    )
-
-    with pytest.raises(
-        ConfigError,
-        match="`install.targets.dev-python.command` must be `install` or `sync`",
-    ):
-        load_config(config_path)
 
 
 def test_load_config_parses_brew_install_targets(tmp_path: Path) -> None:

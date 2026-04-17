@@ -322,7 +322,7 @@ def test_plan_install_builds_local_and_system_install_commands(
     assert specs[2].cwd == tmp_path
 
 
-def test_plan_install_supports_poetry_and_uv_backends(tmp_path: Path) -> None:
+def test_plan_install_supports_poetry_and_pip_backends(tmp_path: Path) -> None:
     """Install planning maps each configured backend to its native command."""
     targets = [
         InstallTargetConfig(
@@ -331,9 +331,8 @@ def test_plan_install_supports_poetry_and_uv_backends(tmp_path: Path) -> None:
             args=["--sync"],
         ),
         InstallTargetConfig(
-            name="editable-uv",
-            backend="uv",
-            command="install",
+            name="editable-pip",
+            backend="pip",
             path=".",
             editable=True,
         ),
@@ -343,7 +342,7 @@ def test_plan_install_supports_poetry_and_uv_backends(tmp_path: Path) -> None:
 
     assert [spec.command for spec in specs] == [
         ["poetry", "install", "--sync"],
-        ["uv", "pip", "install", "-e", "."],
+        ["python3", "-m", "pip", "install", "-e", "."],
     ]
 
 
@@ -353,7 +352,6 @@ def test_plan_install_supports_uv_project_sync_targets(tmp_path: Path) -> None:
         InstallTargetConfig(
             name="dev-python",
             backend="uv",
-            command="sync",
             groups=["dev"],
             extras=["test", "docs"],
             install_project=False,
@@ -361,7 +359,6 @@ def test_plan_install_supports_uv_project_sync_targets(tmp_path: Path) -> None:
         InstallTargetConfig(
             name="project-sync",
             backend="uv",
-            command="sync",
             install_project=True,
             args=["--frozen"],
         ),
@@ -433,36 +430,6 @@ def test_plan_install_validates_backend_specific_inputs(tmp_path: Path) -> None:
 
     with pytest.raises(
         ConfigError,
-        match="install.targets.editable.command.*must be `install` or `sync`.*uv",
-    ):
-        plan_install(
-            tmp_path,
-            [
-                InstallTargetConfig(
-                    name="editable",
-                    backend="uv",
-                )
-            ],
-        )
-
-    with pytest.raises(
-        ConfigError,
-        match="install.targets.python-deps.command.*not supported.*pip",
-    ):
-        plan_install(
-            tmp_path,
-            [
-                InstallTargetConfig(
-                    name="python-deps",
-                    backend="pip",
-                    command="install",
-                    path=".",
-                )
-            ],
-        )
-
-    with pytest.raises(
-        ConfigError,
         match="install.targets.python-deps.groups.*not supported.*pip",
     ):
         plan_install(
@@ -479,7 +446,7 @@ def test_plan_install_validates_backend_specific_inputs(tmp_path: Path) -> None:
 
     with pytest.raises(
         ConfigError,
-        match="install.targets.dev-python.packages.*not supported.*project sync",
+        match="install.targets.dev-python.packages.*not supported.*uv",
     ):
         plan_install(
             tmp_path,
@@ -487,16 +454,14 @@ def test_plan_install_validates_backend_specific_inputs(tmp_path: Path) -> None:
                 InstallTargetConfig(
                     name="dev-python",
                     backend="uv",
-                    command="sync",
                     packages=["dev"],
-                    groups=["dev"],
                 )
             ],
         )
 
     with pytest.raises(
         ConfigError,
-        match="install.targets.dev-python.groups.*not supported.*uv",
+        match="install.targets.dev-python.path.*not supported.*uv",
     ):
         plan_install(
             tmp_path,
@@ -504,8 +469,6 @@ def test_plan_install_validates_backend_specific_inputs(tmp_path: Path) -> None:
                 InstallTargetConfig(
                     name="dev-python",
                     backend="uv",
-                    command="install",
-                    groups=["dev"],
                     path=".",
                 )
             ],
