@@ -375,6 +375,99 @@ test:
     }
 
 
+def test_inspect_reports_default_test_runners(tmp_path: Path, capsys) -> None:
+    """Inspect test reflects configured default runner selection."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+test:
+  default: python
+  default_runners: ["integration"]
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    integration:
+      backend: tox
+      tox_env: py311
+    cpp-tests:
+      backend: ctest
+      build_dir: build/tests
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "inspect", "test"])
+
+    captured = capsys.readouterr()
+    document = yaml.safe_load(captured.out)
+    assert exit_code == 0
+    assert document["summary"] == {
+        "command": "test",
+        "selection": "python",
+        "runners": ["integration"],
+    }
+    assert document["effective_config"] == {
+        "test": {
+            "default": "python",
+            "default_runners": ["integration"],
+            "runners": {
+                "integration": {
+                    "backend": "tox",
+                    "tox_env": "py311",
+                }
+            },
+        }
+    }
+
+
+def test_inspect_reports_default_deploy_targets(tmp_path: Path, capsys) -> None:
+    """Inspect deploy reflects configured default target selection."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+deploy:
+  default_targets: ["testpypi"]
+  targets:
+    testpypi:
+      backend: twine
+      artifacts: ["dist/*"]
+      repository: testpypi
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+      repository: pypi
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "inspect", "deploy"])
+
+    captured = capsys.readouterr()
+    document = yaml.safe_load(captured.out)
+    assert exit_code == 0
+    assert document["summary"] == {
+        "command": "deploy",
+        "targets": ["testpypi"],
+    }
+    assert document["effective_config"] == {
+        "deploy": {
+            "default_targets": ["testpypi"],
+            "targets": {
+                "testpypi": {
+                    "backend": "twine",
+                    "artifacts": ["dist/*"],
+                    "repository": "testpypi",
+                }
+            },
+        }
+    }
+
+
 def test_inspect_build_rejects_target_override_for_python_selection(
     tmp_path: Path, capsys
 ) -> None:
@@ -573,6 +666,119 @@ install:
     assert "uv sync --group dev --extra test --extra docs --no-install-project" in (
         captured.out
     )
+
+
+def test_install_uses_default_targets_when_cli_target_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Install target defaults apply when the CLI omits --target."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+install:
+  default_targets: ["system"]
+  targets:
+    editable:
+      backend: pip
+      path: .
+      editable: true
+    system:
+      backend: apt-get
+      packages: ["cmake", "clang"]
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "install", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["install target `system`"]
+
+
+def test_deploy_uses_default_targets_when_cli_target_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Deploy target defaults apply when the CLI omits --target."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+deploy:
+  default_targets: ["testpypi"]
+  targets:
+    testpypi:
+      backend: twine
+      artifacts: ["dist/*"]
+      repository: testpypi
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+      repository: pypi
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+    (tmp_path / "dist").mkdir()
+    (tmp_path / "dist" / "demo.whl").write_text("wheel", encoding="utf-8")
+
+    exit_code = cli.main(["--config", str(config), "deploy", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["deploy target `testpypi`"]
+
+
+def test_deploy_cli_target_overrides_default_targets(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Explicit deploy target filters take precedence over config defaults."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+deploy:
+  default_targets: ["testpypi"]
+  targets:
+    testpypi:
+      backend: twine
+      artifacts: ["dist/*"]
+      repository: testpypi
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+      repository: pypi
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+    (tmp_path / "dist").mkdir()
+    (tmp_path / "dist" / "demo.whl").write_text("wheel", encoding="utf-8")
+
+    exit_code = cli.main(
+        ["--config", str(config), "deploy", "--target", "pypi", "--dry-run"]
+    )
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["deploy target `pypi`"]
 
 
 def test_build_cli_target_overrides_profile_and_base_targets(
@@ -904,6 +1110,44 @@ test:
     assert captured["descriptions"] == ["tox runner `integration`"]
 
 
+def test_test_uses_default_runners_when_cli_runner_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Test runner defaults apply after resolving the active kind selection."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+test:
+  default: python
+  default_runners: ["integration"]
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    integration:
+      backend: tox
+      tox_env: py311
+    cpp-tests:
+      backend: ctest
+      build_dir: build/tests
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "test", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["tox runner `integration`"]
+
+
 def test_format_selection_and_target_filter_apply_together(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -945,6 +1189,44 @@ format:
             "--dry-run",
         ]
     )
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["black formatter `black-style`"]
+
+
+def test_format_uses_default_targets_when_cli_target_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Format target defaults apply when the CLI omits --target."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+format:
+  default: python
+  default_targets: ["black-style"]
+  targets:
+    python-style:
+      backend: ruff-format
+      paths: ["src", "tests"]
+    black-style:
+      backend: black
+      paths: ["src"]
+    cpp-style:
+      backend: clang-format
+      paths: ["src/demo.cpp"]
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "format", "--dry-run"])
 
     assert exit_code == 0
     assert captured["descriptions"] == ["black formatter `black-style`"]
@@ -993,6 +1275,41 @@ docs:
     assert captured["descriptions"] == ["docs target `cpp-api`"]
 
 
+def test_docs_uses_default_targets_when_cli_target_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Docs target defaults apply when the CLI omits --target."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+docs:
+  default_targets: ["cpp-api"]
+  targets:
+    python-api:
+      backend: sphinx
+      source_dir: docs
+      build_dir: docs/_build/html
+    cpp-api:
+      backend: doxygen
+      config_file: Doxyfile
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "docs", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["docs target `cpp-api`"]
+
+
 def test_lint_uses_default_selection_when_cli_selection_is_omitted(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -1025,6 +1342,44 @@ lint:
 
     assert exit_code == 0
     assert captured["descriptions"] == ["clang-tidy target `cpp-style`"]
+
+
+def test_lint_uses_default_targets_when_cli_target_is_omitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Lint target defaults apply when the CLI omits --target."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+lint:
+  default: python
+  default_targets: ["python-static"]
+  targets:
+    python-style:
+      backend: ruff-check
+      paths: ["src", "tests"]
+    python-static:
+      backend: pylint
+      paths: ["src"]
+    cpp-style:
+      backend: clang-tidy
+      paths: ["src/demo.cpp"]
+""",
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_specs(self, specs, dry_run=False):
+        captured["descriptions"] = [spec.description for spec in specs]
+
+    monkeypatch.setattr("foga.executor.CommandExecutor.run_specs", fake_run_specs)
+
+    exit_code = cli.main(["--config", str(config), "lint", "--dry-run"])
+
+    assert exit_code == 0
+    assert captured["descriptions"] == ["pylint target `python-static`"]
 
 
 def test_docs_reports_missing_workflows(tmp_path: Path, capsys) -> None:

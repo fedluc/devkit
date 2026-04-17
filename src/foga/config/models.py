@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, TypeVar
 
 from ..adapters.kinds import format_backend_kind, lint_backend_kind, test_backend_kind
+from ..errors import ConfigError
 from .constants import (
     ALL_WORKFLOW_SELECTION,
     CPP_WORKFLOW_KIND,
@@ -218,11 +219,14 @@ class TestConfig(WorkflowSelectionConfig):
     Attributes:
         default: Default test kind selection used when the CLI does not request
             an explicit test mode.
+        default_runners: Default runner names selected when the CLI omits
+            ``--runner``.
         runners: Parsed test runners keyed by runner name.
     """
 
     __test__ = False
 
+    default_runners: list[str] = field(default_factory=list)
     runners: dict[str, TestRunnerConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -250,6 +254,28 @@ class TestConfig(WorkflowSelectionConfig):
             self.runners,
             active_kinds=set(self.selected_kinds(selection)),
             kind_resolver=test_backend_kind,
+        )
+
+    def selected_runners(
+        self,
+        selection: str | None = None,
+        runner_names: list[str] | None = None,
+    ) -> dict[str, TestRunnerConfig]:
+        """Resolve the effective test runners for one invocation.
+
+        Args:
+            selection: Optional explicit test kind selected by the CLI.
+            runner_names: Optional explicit runner names selected by the CLI.
+
+        Returns:
+            Runner mapping after kind selection and named default resolution.
+        """
+
+        return _select_named_entries(
+            self.select_runners(selection),
+            selected_names=runner_names,
+            default_names=self.default_runners,
+            label="test runner",
         )
 
 
@@ -310,9 +336,12 @@ class FormatConfig(WorkflowSelectionConfig):
     Attributes:
         default: Default format kind selection used when the CLI does not
             request an explicit format mode.
+        default_targets: Default target names selected when the CLI omits
+            ``--target``.
         targets: Parsed format targets keyed by target name.
     """
 
+    default_targets: list[str] = field(default_factory=list)
     targets: dict[str, FormatTargetConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -342,6 +371,20 @@ class FormatConfig(WorkflowSelectionConfig):
             kind_resolver=format_backend_kind,
         )
 
+    def selected_targets(
+        self,
+        selection: str | None = None,
+        target_names: list[str] | None = None,
+    ) -> dict[str, FormatTargetConfig]:
+        """Resolve the effective format targets for one invocation."""
+
+        return _select_named_entries(
+            self.select_targets(selection),
+            selected_names=target_names,
+            default_names=self.default_targets,
+            label="format target",
+        )
+
 
 @dataclass(frozen=True)
 class LintTargetConfig(PathTargetConfig):
@@ -365,9 +408,12 @@ class LintConfig(WorkflowSelectionConfig):
     Attributes:
         default: Default lint kind selection used when the CLI does not
             request an explicit lint mode.
+        default_targets: Default target names selected when the CLI omits
+            ``--target``.
         targets: Parsed lint targets keyed by target name.
     """
 
+    default_targets: list[str] = field(default_factory=list)
     targets: dict[str, LintTargetConfig] = field(default_factory=dict)
 
     def available_kinds(self) -> list[str]:
@@ -395,6 +441,20 @@ class LintConfig(WorkflowSelectionConfig):
             self.targets,
             active_kinds=set(self.selected_kinds(selection)),
             kind_resolver=lint_backend_kind,
+        )
+
+    def selected_targets(
+        self,
+        selection: str | None = None,
+        target_names: list[str] | None = None,
+    ) -> dict[str, LintTargetConfig]:
+        """Resolve the effective lint targets for one invocation."""
+
+        return _select_named_entries(
+            self.select_targets(selection),
+            selected_names=target_names,
+            default_names=self.default_targets,
+            label="lint target",
         )
 
 
@@ -474,10 +534,77 @@ class DocsConfig:
     """Aggregate docs configuration for configured documentation workflows.
 
     Attributes:
+        default_targets: Default docs target names selected when the CLI omits
+            ``--target``.
         targets: Parsed docs targets keyed by target name.
     """
 
+    default_targets: list[str] = field(default_factory=list)
     targets: dict[str, DocsTargetConfig] = field(default_factory=dict)
+
+    def selected_targets(
+        self, target_names: list[str] | None = None
+    ) -> dict[str, DocsTargetConfig]:
+        """Resolve the effective docs targets for one invocation."""
+
+        return _select_named_entries(
+            self.targets,
+            selected_names=target_names,
+            default_names=self.default_targets,
+            label="docs target",
+        )
+
+
+@dataclass(frozen=True)
+class InstallConfig:
+    """Aggregate install configuration for configured installation workflows.
+
+    Attributes:
+        default_targets: Default install target names selected when the CLI omits
+            ``--target``.
+        targets: Parsed install targets keyed by target name.
+    """
+
+    default_targets: list[str] = field(default_factory=list)
+    targets: dict[str, InstallTargetConfig] = field(default_factory=dict)
+
+    def selected_targets(
+        self, target_names: list[str] | None = None
+    ) -> dict[str, InstallTargetConfig]:
+        """Resolve the effective install targets for one invocation."""
+
+        return _select_named_entries(
+            self.targets,
+            selected_names=target_names,
+            default_names=self.default_targets,
+            label="install target",
+        )
+
+
+@dataclass(frozen=True)
+class DeployConfig:
+    """Aggregate deploy configuration for configured deployment workflows.
+
+    Attributes:
+        default_targets: Default deploy target names selected when the CLI omits
+            ``--target``.
+        targets: Parsed deploy targets keyed by target name.
+    """
+
+    default_targets: list[str] = field(default_factory=list)
+    targets: dict[str, DeployTargetConfig] = field(default_factory=dict)
+
+    def selected_targets(
+        self, target_names: list[str] | None = None
+    ) -> dict[str, DeployTargetConfig]:
+        """Resolve the effective deploy targets for one invocation."""
+
+        return _select_named_entries(
+            self.targets,
+            selected_names=target_names,
+            default_names=self.default_targets,
+            label="deploy target",
+        )
 
 
 @dataclass(frozen=True)
@@ -514,8 +641,8 @@ class FogaConfig:
         docs: Parsed documentation target configuration.
         formatters: Parsed format target configuration and defaults.
         linters: Parsed lint target configuration and defaults.
-        install: Parsed install configuration keyed by target name.
-        deploy: Parsed deploy configuration keyed by target name.
+        install: Parsed install configuration and defaults.
+        deploy: Parsed deploy configuration and defaults.
         clean: Parsed clean configuration.
         raw: Raw merged configuration mapping after profile application.
     """
@@ -527,8 +654,8 @@ class FogaConfig:
     docs: DocsConfig
     formatters: FormatConfig
     linters: LintConfig
-    install: dict[str, InstallTargetConfig]
-    deploy: dict[str, DeployTargetConfig]
+    install: InstallConfig
+    deploy: DeployConfig
     clean: CleanConfig
     raw: dict[str, Any] = field(repr=False)
 
@@ -604,3 +731,37 @@ def _select_entries_by_kind(
         for name, entry in entries.items()
         if kind_resolver(entry.backend) in active_kinds
     }
+
+
+def _select_named_entries(
+    entries: Mapping[str, WorkflowEntryT],
+    *,
+    selected_names: list[str] | None,
+    default_names: list[str] | None,
+    label: str,
+) -> dict[str, WorkflowEntryT]:
+    """Resolve named entries, applying configured defaults when needed.
+
+    Args:
+        entries: Candidate entries available for the current invocation.
+        selected_names: Optional explicit names selected by the CLI.
+        default_names: Optional config-level default names.
+        label: User-facing label used in validation errors.
+
+    Returns:
+        Selected entries in the requested order.
+
+    Raises:
+        ConfigError: If an explicit or default name does not exist.
+    """
+
+    effective_names = default_names if selected_names is None else selected_names
+    if not effective_names:
+        return dict(entries)
+
+    selected: dict[str, WorkflowEntryT] = {}
+    for name in effective_names:
+        if name not in entries:
+            raise ConfigError(f"Unknown {label}: {name}")
+        selected[name] = entries[name]
+    return selected

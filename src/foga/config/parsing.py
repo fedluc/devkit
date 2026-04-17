@@ -11,14 +11,23 @@ from ..adapters.deploy import DEPLOY_BACKENDS
 from ..adapters.docs import DOCS_BACKENDS
 from ..adapters.formatting import FORMAT_BACKENDS
 from ..adapters.install import INSTALL_BACKENDS
-from ..adapters.kinds import BUILD_CMAKE, BUILD_PYTHON
+from ..adapters.kinds import (
+    BUILD_CMAKE,
+    BUILD_PYTHON,
+    format_backend_kind,
+    lint_backend_kind,
+    test_backend_kind,
+)
 from ..adapters.linting import LINT_BACKENDS
 from ..adapters.testing import TEST_BACKENDS
 from ..errors import ConfigError
 from .constants import (
+    ALL_WORKFLOW_SELECTION,
     BUILD_SECTION,
     CLEAN_SECTION,
     CPP_WORKFLOW_KIND,
+    DEFAULT_RUNNERS_KEY,
+    DEFAULT_TARGETS_KEY,
     DEPLOY_SECTION,
     DOCS_SECTION,
     FORMAT_SECTION,
@@ -36,12 +45,14 @@ from .models import (
     BuildConfig,
     CleanConfig,
     CppBuildConfig,
+    DeployConfig,
     DeployTargetConfig,
     DocsConfig,
     DocsTargetConfig,
     FogaConfig,
     FormatConfig,
     FormatTargetConfig,
+    InstallConfig,
     InstallTargetConfig,
     LintConfig,
     LintTargetConfig,
@@ -236,6 +247,7 @@ def _parse_named_workflow_config(
     registry: dict[str, Any],
     build_target: Callable[[str, dict[str, Any], str, str], WorkflowTargetT],
     build_config: Callable[[str | None, dict[str, WorkflowTargetT]], WorkflowConfigT],
+    extra_allowed_keys: set[str] | None = None,
 ) -> WorkflowConfigT:
     """Parse workflow sections that map names to backend-configured entries.
 
@@ -257,7 +269,10 @@ def _parse_named_workflow_config(
     if not isinstance(data, dict):
         raise ConfigError(f"`{section}` must be a mapping")
 
-    reject_unknown_keys(data, section, {"default", entries_key})
+    allowed_keys = {"default", entries_key}
+    if extra_allowed_keys:
+        allowed_keys.update(extra_allowed_keys)
+    reject_unknown_keys(data, section, allowed_keys)
     entries_data = data.get(entries_key) or {}
     if not isinstance(entries_data, dict):
         raise ConfigError(f"`{section}.{entries_key}` must be a mapping")
@@ -295,6 +310,7 @@ def _parse_named_targets(
     registry: dict[str, Any],
     build_target: Callable[[str, dict[str, Any], str, str], WorkflowTargetT],
     allow_missing_backend: bool = False,
+    extra_allowed_keys: set[str] | None = None,
 ) -> dict[str, WorkflowTargetT]:
     """Parse named target mappings shared by docs and deploy workflows.
 
@@ -315,7 +331,10 @@ def _parse_named_targets(
     if not isinstance(data, dict):
         raise ConfigError(f"`{section}` must be a mapping")
 
-    reject_unknown_keys(data, section, {TARGETS_KEY})
+    allowed_keys = {TARGETS_KEY}
+    if extra_allowed_keys:
+        allowed_keys.update(extra_allowed_keys)
+    reject_unknown_keys(data, section, allowed_keys)
     targets_data = data.get(TARGETS_KEY) or {}
     if not isinstance(targets_data, dict):
         raise ConfigError(f"`{section}.{TARGETS_KEY}` must be a mapping")
@@ -555,7 +574,7 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
         ConfigError: If the test section is malformed.
     """
 
-    return _parse_named_workflow_config(
+    config = _parse_named_workflow_config(
         data,
         section=TEST_SECTION,
         entries_key=RUNNERS_KEY,
@@ -565,6 +584,29 @@ def _parse_tests(data: dict[str, Any]) -> TestConfig:
             default=default,
             runners=runners,
         ),
+        extra_allowed_keys={DEFAULT_RUNNERS_KEY},
+    )
+    default_runners = _parse_default_named_selection(
+        data.get(DEFAULT_RUNNERS_KEY),
+        f"{TEST_SECTION}.{DEFAULT_RUNNERS_KEY}",
+    )
+    _validate_named_defaults(
+        defaults=default_runners,
+        entries=config.runners,
+        path=f"{TEST_SECTION}.{DEFAULT_RUNNERS_KEY}",
+        label="test runner",
+        allowed_names=_default_kind_entries(
+            config.runners,
+            config.default,
+            test_backend_kind,
+        ),
+        selection_path=f"{TEST_SECTION}.default",
+        selection=config.default,
+    )
+    return TestConfig(
+        default=config.default,
+        default_runners=default_runners,
+        runners=config.runners,
     )
 
 
@@ -581,15 +623,25 @@ def _parse_docs(data: dict[str, Any]) -> DocsConfig:
         ConfigError: If the docs section is malformed.
     """
 
-    return DocsConfig(
-        targets=_parse_named_targets(
-            data,
-            section=DOCS_SECTION,
-            registry=DOCS_BACKENDS,
-            build_target=_parse_docs_target,
-            allow_missing_backend=True,
-        )
+    targets = _parse_named_targets(
+        data,
+        section=DOCS_SECTION,
+        registry=DOCS_BACKENDS,
+        build_target=_parse_docs_target,
+        allow_missing_backend=True,
+        extra_allowed_keys={DEFAULT_TARGETS_KEY},
     )
+    default_targets = _parse_default_named_selection(
+        data.get(DEFAULT_TARGETS_KEY),
+        f"{DOCS_SECTION}.{DEFAULT_TARGETS_KEY}",
+    )
+    _validate_named_defaults(
+        defaults=default_targets,
+        entries=targets,
+        path=f"{DOCS_SECTION}.{DEFAULT_TARGETS_KEY}",
+        label="docs target",
+    )
+    return DocsConfig(default_targets=default_targets, targets=targets)
 
 
 def _parse_format(data: dict[str, Any]) -> FormatConfig:
@@ -605,7 +657,7 @@ def _parse_format(data: dict[str, Any]) -> FormatConfig:
         ConfigError: If the format section is malformed.
     """
 
-    return _parse_named_workflow_config(
+    config = _parse_named_workflow_config(
         data,
         section=FORMAT_SECTION,
         entries_key=TARGETS_KEY,
@@ -617,6 +669,29 @@ def _parse_format(data: dict[str, Any]) -> FormatConfig:
             default=default,
             targets=targets,
         ),
+        extra_allowed_keys={DEFAULT_TARGETS_KEY},
+    )
+    default_targets = _parse_default_named_selection(
+        data.get(DEFAULT_TARGETS_KEY),
+        f"{FORMAT_SECTION}.{DEFAULT_TARGETS_KEY}",
+    )
+    _validate_named_defaults(
+        defaults=default_targets,
+        entries=config.targets,
+        path=f"{FORMAT_SECTION}.{DEFAULT_TARGETS_KEY}",
+        label="format target",
+        allowed_names=_default_kind_entries(
+            config.targets,
+            config.default,
+            format_backend_kind,
+        ),
+        selection_path=f"{FORMAT_SECTION}.default",
+        selection=config.default,
+    )
+    return FormatConfig(
+        default=config.default,
+        default_targets=default_targets,
+        targets=config.targets,
     )
 
 
@@ -633,7 +708,7 @@ def _parse_lint(data: dict[str, Any]) -> LintConfig:
         ConfigError: If the lint section is malformed.
     """
 
-    return _parse_named_workflow_config(
+    config = _parse_named_workflow_config(
         data,
         section=LINT_SECTION,
         entries_key=TARGETS_KEY,
@@ -645,10 +720,33 @@ def _parse_lint(data: dict[str, Any]) -> LintConfig:
             default=default,
             targets=targets,
         ),
+        extra_allowed_keys={DEFAULT_TARGETS_KEY},
+    )
+    default_targets = _parse_default_named_selection(
+        data.get(DEFAULT_TARGETS_KEY),
+        f"{LINT_SECTION}.{DEFAULT_TARGETS_KEY}",
+    )
+    _validate_named_defaults(
+        defaults=default_targets,
+        entries=config.targets,
+        path=f"{LINT_SECTION}.{DEFAULT_TARGETS_KEY}",
+        label="lint target",
+        allowed_names=_default_kind_entries(
+            config.targets,
+            config.default,
+            lint_backend_kind,
+        ),
+        selection_path=f"{LINT_SECTION}.default",
+        selection=config.default,
+    )
+    return LintConfig(
+        default=config.default,
+        default_targets=default_targets,
+        targets=config.targets,
     )
 
 
-def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
+def _parse_deploy(data: dict[str, Any]) -> DeployConfig:
     """Parse deploy target configuration.
 
     Args:
@@ -661,15 +759,27 @@ def _parse_deploy(data: dict[str, Any]) -> dict[str, DeployTargetConfig]:
         ConfigError: If the deploy section is malformed.
     """
 
-    return _parse_named_targets(
+    targets = _parse_named_targets(
         data,
         section=DEPLOY_SECTION,
         registry=DEPLOY_BACKENDS,
         build_target=_parse_deploy_target,
+        extra_allowed_keys={DEFAULT_TARGETS_KEY},
     )
+    default_targets = _parse_default_named_selection(
+        data.get(DEFAULT_TARGETS_KEY),
+        f"{DEPLOY_SECTION}.{DEFAULT_TARGETS_KEY}",
+    )
+    _validate_named_defaults(
+        defaults=default_targets,
+        entries=targets,
+        path=f"{DEPLOY_SECTION}.{DEFAULT_TARGETS_KEY}",
+        label="deploy target",
+    )
+    return DeployConfig(default_targets=default_targets, targets=targets)
 
 
-def _parse_install(data: dict[str, Any]) -> dict[str, InstallTargetConfig]:
+def _parse_install(data: dict[str, Any]) -> InstallConfig:
     """Parse install target configuration.
 
     Args:
@@ -679,12 +789,24 @@ def _parse_install(data: dict[str, Any]) -> dict[str, InstallTargetConfig]:
         Parsed install targets keyed by configured name.
     """
 
-    return _parse_named_targets(
+    targets = _parse_named_targets(
         data,
         section=INSTALL_SECTION,
         registry=INSTALL_BACKENDS,
         build_target=_parse_install_target,
+        extra_allowed_keys={DEFAULT_TARGETS_KEY},
     )
+    default_targets = _parse_default_named_selection(
+        data.get(DEFAULT_TARGETS_KEY),
+        f"{INSTALL_SECTION}.{DEFAULT_TARGETS_KEY}",
+    )
+    _validate_named_defaults(
+        defaults=default_targets,
+        entries=targets,
+        path=f"{INSTALL_SECTION}.{DEFAULT_TARGETS_KEY}",
+        label="install target",
+    )
+    return InstallConfig(default_targets=default_targets, targets=targets)
 
 
 def _parse_clean(data: dict[str, Any]) -> CleanConfig:
@@ -723,3 +845,53 @@ def _build_backends_for_entry(name: str) -> set[str]:
     if name == PYTHON_WORKFLOW_KIND:
         return {BUILD_PYTHON}
     raise ConfigError(f"`{BUILD_SECTION}.{name}` is not a supported build entry")
+
+
+def _parse_default_named_selection(value: Any, path: str) -> list[str]:
+    """Parse an optional non-empty list of default named workflow entries."""
+
+    defaults = string_list(value, path)
+    if value is not None and not defaults:
+        raise ConfigError(f"`{path}` must be a non-empty list of strings")
+    return defaults
+
+
+def _validate_named_defaults(
+    *,
+    defaults: list[str],
+    entries: dict[str, WorkflowTargetT],
+    path: str,
+    label: str,
+    allowed_names: set[str] | None = None,
+    selection_path: str | None = None,
+    selection: str | None = None,
+) -> None:
+    """Validate configured default named selections."""
+
+    for name in defaults:
+        if name not in entries:
+            raise ConfigError(f"`{path}` references unknown {label}: {name}")
+        if allowed_names is None or name in allowed_names:
+            continue
+        if selection_path is None or selection is None:
+            raise ConfigError(f"`{path}` references unsupported {label}: {name}")
+        raise ConfigError(
+            f"`{path}` {label} `{name}` is not available for "
+            f"`{selection_path}: {selection}`"
+        )
+
+
+def _default_kind_entries(
+    entries: dict[str, WorkflowTargetT],
+    selection: str | None,
+    kind_resolver: Callable[[str], str],
+) -> set[str] | None:
+    """Return entries allowed by the configured default kind, if any."""
+
+    if selection in {None, ALL_WORKFLOW_SELECTION}:
+        return None
+    return {
+        name
+        for name, entry in entries.items()
+        if kind_resolver(entry.backend) == selection
+    }

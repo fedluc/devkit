@@ -355,8 +355,8 @@ deploy:
     assert config.docs.targets["api"].launcher == ["uv", "run"]
     assert config.formatters.targets["python-style"].launcher == ["pipx", "run"]
     assert config.linters.targets["python-style"].launcher == ["pipx", "run"]
-    assert config.install["editable"].launcher == ["uv", "run"]
-    assert config.deploy["pypi"].launcher == ["uv", "run"]
+    assert config.install.targets["editable"].launcher == ["uv", "run"]
+    assert config.deploy.targets["pypi"].launcher == ["uv", "run"]
 
 
 def test_load_config_rejects_shell_string_launchers(tmp_path: Path) -> None:
@@ -949,9 +949,10 @@ install:
 
     config = load_config(config_path)
 
-    assert list(config.install) == ["editable", "python-deps"]
-    assert config.install["editable"].editable is True
-    assert config.install["python-deps"].args == ["--sync"]
+    assert list(config.install.targets) == ["editable", "python-deps"]
+    assert config.install.default_targets == []
+    assert config.install.targets["editable"].editable is True
+    assert config.install.targets["python-deps"].args == ["--sync"]
 
 
 def test_load_config_parses_uv_project_install_fields(tmp_path: Path) -> None:
@@ -973,9 +974,9 @@ install:
 
     config = load_config(config_path)
 
-    assert config.install["dev-python"].groups == ["dev"]
-    assert config.install["dev-python"].extras == ["test", "docs"]
-    assert config.install["dev-python"].install_project is False
+    assert config.install.targets["dev-python"].groups == ["dev"]
+    assert config.install.targets["dev-python"].extras == ["test", "docs"]
+    assert config.install.targets["dev-python"].install_project is False
 
 
 def test_load_config_parses_brew_install_targets(tmp_path: Path) -> None:
@@ -995,8 +996,157 @@ install:
 
     config = load_config(config_path)
 
-    assert list(config.install) == ["macos-deps"]
-    assert config.install["macos-deps"].packages == ["cmake", "llvm"]
+    assert list(config.install.targets) == ["macos-deps"]
+    assert config.install.targets["macos-deps"].packages == ["cmake", "llvm"]
+
+
+def test_load_config_parses_named_selection_defaults(tmp_path: Path) -> None:
+    """Named workflow defaults are loaded for all command families."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+test:
+  default: python
+  default_runners: ["unit"]
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    cpp-tests:
+      backend: ctest
+      build_dir: build/tests
+docs:
+  default_targets: ["python-api"]
+  targets:
+    python-api:
+      backend: sphinx
+      source_dir: docs
+      build_dir: docs/_build/html
+format:
+  default: python
+  default_targets: ["python-style"]
+  targets:
+    python-style:
+      backend: ruff-format
+      paths: ["src"]
+    cpp-style:
+      backend: clang-format
+      paths: ["src/demo.cpp"]
+lint:
+  default: cpp
+  default_targets: ["cpp-style"]
+  targets:
+    python-style:
+      backend: ruff-check
+      paths: ["src"]
+    cpp-style:
+      backend: clang-tidy
+      paths: ["src/demo.cpp"]
+install:
+  default_targets: ["editable"]
+  targets:
+    editable:
+      backend: pip
+      path: .
+      editable: true
+deploy:
+  default_targets: ["testpypi"]
+  targets:
+    testpypi:
+      backend: twine
+      artifacts: ["dist/*"]
+""",
+    )
+
+    config = load_config(config_path)
+
+    assert config.tests.default_runners == ["unit"]
+    assert config.docs.default_targets == ["python-api"]
+    assert config.formatters.default_targets == ["python-style"]
+    assert config.linters.default_targets == ["cpp-style"]
+    assert config.install.default_targets == ["editable"]
+    assert config.deploy.default_targets == ["testpypi"]
+
+
+def test_load_config_rejects_empty_named_defaults(tmp_path: Path) -> None:
+    """Named selection defaults must be non-empty when configured."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+docs:
+  default_targets: []
+  targets:
+    python-api:
+      backend: sphinx
+      source_dir: docs
+      build_dir: docs/_build/html
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`docs.default_targets` must be a non-empty list of strings",
+    ):
+        load_config(config_path)
+
+
+def test_load_config_rejects_unknown_named_defaults(tmp_path: Path) -> None:
+    """Named selection defaults must reference configured entries."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+deploy:
+  default_targets: ["missing"]
+  targets:
+    pypi:
+      backend: twine
+      artifacts: ["dist/*"]
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match="`deploy.default_targets` references unknown deploy target: missing",
+    ):
+        load_config(config_path)
+
+
+def test_load_config_rejects_named_defaults_outside_default_kind(
+    tmp_path: Path,
+) -> None:
+    """Kind-scoped defaults must stay within the configured default kind."""
+    config_path = write_config(
+        tmp_path,
+        """
+project:
+  name: demo
+format:
+  default: python
+  default_targets: ["cpp-style"]
+  targets:
+    python-style:
+      backend: ruff-format
+      paths: ["src"]
+    cpp-style:
+      backend: clang-format
+      paths: ["src/demo.cpp"]
+""",
+    )
+
+    with pytest.raises(
+        ConfigError,
+        match=(
+            "`format.default_targets` format target `cpp-style` is not available "
+            "for `format.default: python`"
+        ),
+    ):
+        load_config(config_path)
 
 
 def test_load_config_rejects_profile_mapping_shape_changes(tmp_path: Path) -> None:

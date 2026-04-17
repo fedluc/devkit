@@ -25,7 +25,6 @@ from .common import (
     WORKFLOW_SELECTION_METAVAR,
     WorkflowSelection,
     config_path_from_context,
-    select_named_items,
     selection_value,
 )
 
@@ -321,11 +320,7 @@ def _build_test_context(config: FogaConfig, args: InspectArgs) -> dict[str, obje
     Returns:
         Test inspection metadata.
     """
-    selected_runners = select_named_items(
-        config.tests.select_runners(args.selection),
-        args.runner,
-        "test runner",
-    )
+    selected_runners = config.tests.selected_runners(args.selection, args.runner)
     return {
         "command": "test",
         "selection": args.selection or config.tests.default or ALL_WORKFLOW_SELECTION,
@@ -343,7 +338,7 @@ def _build_deploy_context(config: FogaConfig, args: InspectArgs) -> dict[str, ob
     Returns:
         Deploy inspection metadata.
     """
-    selected_targets = select_named_items(config.deploy, args.targets, "deploy target")
+    selected_targets = config.deploy.selected_targets(args.targets)
     return {
         "command": "deploy",
         "targets": list(selected_targets),
@@ -481,18 +476,21 @@ def _build_effective_test_config(
     if not isinstance(test_section, dict):
         return {}
 
-    selected_runners = select_named_items(
-        config.tests.select_runners(args.selection),
-        args.runner,
-        "test runner",
-    )
+    selected_runners = config.tests.selected_runners(args.selection, args.runner)
     runners_section = test_section.get("runners")
     if not isinstance(runners_section, dict):
-        return {"test": {"default": test_section.get("default"), "runners": {}}}
+        effective_test = {"runners": {}}
+        if "default" in test_section:
+            effective_test["default"] = test_section["default"]
+        if "default_runners" in test_section:
+            effective_test["default_runners"] = test_section["default_runners"]
+        return {"test": effective_test}
 
     effective_test = {"runners": {}}
     if "default" in test_section:
         effective_test["default"] = test_section["default"]
+    if "default_runners" in test_section:
+        effective_test["default_runners"] = test_section["default_runners"]
     effective_test["runners"] = {
         name: runners_section[name]
         for name in selected_runners
@@ -518,20 +516,24 @@ def _build_effective_deploy_config(
     if not isinstance(deploy_section, dict):
         return {}
 
-    selected_targets = select_named_items(config.deploy, args.targets, "deploy target")
+    selected_targets = config.deploy.selected_targets(args.targets)
     targets_section = deploy_section.get("targets")
     if not isinstance(targets_section, dict):
-        return {"deploy": {"targets": {}}}
+        effective_deploy = {"targets": {}}
+        if "default_targets" in deploy_section:
+            effective_deploy["default_targets"] = deploy_section["default_targets"]
+        return {"deploy": effective_deploy}
 
-    return {
-        "deploy": {
-            "targets": {
-                name: targets_section[name]
-                for name in selected_targets
-                if name in targets_section
-            }
+    effective_deploy: dict[str, object] = {
+        "targets": {
+            name: targets_section[name]
+            for name in selected_targets
+            if name in targets_section
         }
     }
+    if "default_targets" in deploy_section:
+        effective_deploy["default_targets"] = deploy_section["default_targets"]
+    return {"deploy": effective_deploy}
 
 
 def _resolve_active_profile_name(

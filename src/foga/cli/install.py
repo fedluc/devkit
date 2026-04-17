@@ -12,7 +12,7 @@ from ..config.loading import load_config
 from ..config.models import FogaConfig
 from ..errors import ConfigError
 from ..executor import CommandExecutor
-from .common import config_path_from_context, select_named_items
+from .common import config_path_from_context
 
 
 @dataclass(slots=True)
@@ -89,7 +89,7 @@ def run_install(
         ConfigError: If no install workflows are configured.
     """
 
-    selected = select_named_items(config.install, args.targets, "install target")
+    selected = config.install.selected_targets(args.targets)
     plan = plan_install(config.project_root, list(selected.values()))
     if not plan.specs:
         raise ConfigError("No install workflows configured")
