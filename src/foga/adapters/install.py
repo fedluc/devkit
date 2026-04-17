@@ -68,6 +68,17 @@ def _install_subjects(config: InstallTargetConfig) -> list[str]:
     return subjects
 
 
+def _reject_command(config: InstallTargetConfig, backend: str) -> None:
+    """Reject uv command selection for backends that do not support it."""
+
+    if config.command is None:
+        return
+    raise ConfigError(
+        f"`{INSTALL_SECTION}.{TARGETS_KEY}.{config.name}.command` is not supported "
+        f"for the `{backend}` backend"
+    )
+
+
 def _plan_install_command(
     config: InstallTargetConfig,
     request: ToolRequest,
@@ -103,12 +114,6 @@ def _plan_install_command(
     return specs
 
 
-def _uses_uv_sync(config: InstallTargetConfig) -> bool:
-    """Return whether a uv target should use project sync semantics."""
-
-    return bool(config.groups or config.extras or config.install_project is not None)
-
-
 def _uv_sync_options(config: InstallTargetConfig) -> list[str]:
     """Return uv sync flags derived from uv-specific install fields."""
 
@@ -135,7 +140,7 @@ def _plan_uv_install(
         Planned command specs for the target, including hooks.
     """
 
-    if not _uses_uv_sync(config):
+    if config.command == "install":
         return _plan_install_command(
             config,
             request,
@@ -292,6 +297,7 @@ def _validate_pip_like(config: InstallTargetConfig) -> None:
 def _validate_pip(config: InstallTargetConfig) -> None:
     """Validate pip install targets."""
 
+    _reject_command(config, INSTALL_PIP)
     _reject_uv_sync_fields(config, INSTALL_PIP)
     _validate_pip_like(config)
 
@@ -309,11 +315,17 @@ def _validate_uv_sync(config: InstallTargetConfig) -> None:
 
 
 def _validate_uv(config: InstallTargetConfig) -> None:
-    """Validate uv install targets across pip-like and project-sync modes."""
+    """Validate uv install targets for explicit install and sync commands."""
 
-    if _uses_uv_sync(config):
+    if config.command not in {"install", "sync"}:
+        raise ConfigError(
+            f"`{INSTALL_SECTION}.{TARGETS_KEY}.{config.name}.command` must be "
+            "`install` or `sync` for the `uv` backend"
+        )
+    if config.command == "sync":
         _validate_uv_sync(config)
         return
+    _reject_uv_sync_fields(config, INSTALL_UV)
     _validate_pip_like(config)
 
 
@@ -327,6 +339,7 @@ def _validate_poetry(config: InstallTargetConfig) -> None:
         ConfigError: If unsupported path, packages, or editable fields are set.
     """
 
+    _reject_command(config, INSTALL_POETRY)
     _reject_path(config, INSTALL_POETRY)
     _reject_editable(config, INSTALL_POETRY)
     _reject_uv_sync_fields(config, INSTALL_POETRY)
@@ -347,6 +360,7 @@ def _validate_npm(config: InstallTargetConfig) -> None:
         ConfigError: If editable mode is configured for npm.
     """
 
+    _reject_command(config, INSTALL_NPM)
     _reject_editable(config, INSTALL_NPM)
     _reject_uv_sync_fields(config, INSTALL_NPM)
 
@@ -362,6 +376,7 @@ def _validate_system_packages(config: InstallTargetConfig, *, backend: str) -> N
         ConfigError: If unsupported fields are set or no packages are configured.
     """
 
+    _reject_command(config, backend)
     _reject_path(config, backend)
     _reject_editable(config, backend)
     _reject_uv_sync_fields(config, backend)

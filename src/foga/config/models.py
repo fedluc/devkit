@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Mapping, TypeVar
+from typing import Any, Callable, Literal, Mapping, TypeVar
 
 from ..adapters.kinds import format_backend_kind, lint_backend_kind, test_backend_kind
 from .constants import (
@@ -406,6 +406,8 @@ class InstallTargetConfig(NamedBackendConfig):
         name: Install target name from the configuration file.
         backend: Install backend identifier.
         launcher: Optional command prefix prepended before install commands.
+        command: Optional uv subcommand. The ``uv`` backend requires either
+            ``install`` or ``sync``.
         packages: Optional package names, specifiers, or package-manager targets.
         path: Optional local path installed by backends that support it.
         editable: Whether pip-style backends should install the path in editable mode.
@@ -417,6 +419,7 @@ class InstallTargetConfig(NamedBackendConfig):
         hooks: Commands executed around install steps.
     """
 
+    command: Literal["install", "sync"] | None = None
     packages: list[str] = field(default_factory=list)
     path: str | None = None
     editable: bool = False

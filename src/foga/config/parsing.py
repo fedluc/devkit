@@ -528,6 +528,7 @@ def _parse_install_target(
             f"{path}.{LAUNCHER_KEY}",
             field_name=LAUNCHER_KEY,
         ),
+        command=optional_str(data, "command", f"{path}.command"),
         packages=string_list(data.get("packages"), f"{path}.packages"),
         path=optional_str(data, "path", f"{path}.path"),
         editable=editable if editable is not None else False,

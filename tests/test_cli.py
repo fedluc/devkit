@@ -559,6 +559,7 @@ install:
   targets:
     dev-python:
       backend: uv
+      command: sync
       groups: ["dev"]
       extras: ["test", "docs"]
       install_project: false

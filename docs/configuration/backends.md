@@ -203,10 +203,13 @@ mean:
 
 ### `uv`
 
-`install.targets.<name>.backend: uv` supports two install modes.
+`install.targets.<name>.backend: uv` requires an explicit `command` field with
+either `install` or `sync`.
 
-Pip-style uv installs run `uv pip install` and accept the same fields as `pip`:
+When `command: install`, `foga` runs `uv pip install` and accepts the same
+fields as `pip`:
 
+- `command`: must be `install`
 - `path`: optional local path to install, commonly `.`
 - `packages`: optional package names or specifiers appended after the command
 - `editable`: optional boolean that adds `-e`; requires `path`
@@ -215,8 +218,10 @@ Pip-style uv installs run `uv pip install` and accept the same fields as `pip`:
 - `env`: environment variables added to the install command
 - `hooks`: pre/post commands run around the install target
 
-Uv project sync runs `uv sync` when one of these uv-specific fields is present:
+When `command: sync`, `foga` runs `uv sync` and accepts these uv-specific
+fields:
 
+- `command`: must be `sync`
 - `groups`: optional dependency groups passed as repeated `--group` flags
 - `extras`: optional extras passed as repeated `--extra` flags
 - `install_project`: optional boolean that controls whether the local project is
@@ -236,6 +241,7 @@ install:
   targets:
     dev-python:
       backend: uv
+      command: sync
       groups: ["dev"]
       extras: ["test", "docs"]
       install_project: false
