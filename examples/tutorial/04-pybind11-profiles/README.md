@@ -33,18 +33,14 @@ Run these commands to verify the example:
 
 ```bash
 foga validate
-foga install --target dev
 foga build python
 foga build cpp
 foga build --profile release cpp
 foga test
 foga test --profile release cpp
 foga lint
-```
-
-Useful follow-up commands:
-
-```bash
 foga inspect --profile release build cpp
 foga clean
 ```
+
+The shell starts with the project `.venv` already active.

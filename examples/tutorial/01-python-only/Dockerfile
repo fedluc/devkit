@@ -1,12 +1,17 @@
 FROM python:3.12-bookworm
 
-ENV DEBIAN_FRONTEND=noninteractive UV_LINK_MODE=copy
+ENV DEBIAN_FRONTEND=noninteractive \
+    UV_LINK_MODE=copy \
+    VIRTUAL_ENV=/workspace/example/.venv \
+    PATH=/workspace/example/.venv/bin:${PATH}
 
 WORKDIR /workspace/example
 
 RUN python -m pip install --no-cache-dir uv
 
-COPY . /workspace/example
+COPY pyproject.toml foga.yml /workspace/example/
+COPY src /workspace/example/src
 
-RUN uv sync --extra dev
-
+RUN uv sync \
+    && uv run python -m build --version >/dev/null \
+    && printf '\nsource /workspace/example/.venv/bin/activate\n' >> /root/.bashrc

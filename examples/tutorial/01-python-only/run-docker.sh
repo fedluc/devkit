@@ -3,9 +3,26 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_NAME="foga-tutorial-python-only"
+BUILD_LOG="$(mktemp)"
 
-echo "Building ${IMAGE_NAME} from ${SCRIPT_DIR} without Docker cache..."
-docker build --no-cache -t "${IMAGE_NAME}" "${SCRIPT_DIR}"
+echo "Setting up environment to run test python-only"
 
-echo "Starting interactive container. You will land in /workspace/example."
-exec docker run --rm -it "${IMAGE_NAME}" bash
+if docker build --no-cache -t "${IMAGE_NAME}" "${SCRIPT_DIR}" >"${BUILD_LOG}" 2>&1; then
+  rm -f "${BUILD_LOG}"
+else
+  echo "Docker image build failed. Full output follows:"
+  cat "${BUILD_LOG}"
+  rm -f "${BUILD_LOG}"
+  exit 1
+fi
+
+cat <<'EOF'
+The container will start in /workspace/example with the project .venv already active.
+These commands should work immediately:
+  foga validate
+  foga build
+  foga inspect
+  foga clean
+EOF
+
+exec docker run --rm -it "${IMAGE_NAME}" bash -i

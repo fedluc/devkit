@@ -33,15 +33,11 @@ Run these commands to verify the example:
 
 ```bash
 foga validate
-foga install --target dev
 foga build
 foga test
 foga lint
-```
-
-Useful follow-up commands:
-
-```bash
 foga inspect test
 foga clean
 ```
+
+The shell starts with the project `.venv` already active.

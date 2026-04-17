@@ -11,12 +11,8 @@ version = "0.1.0"
 description = "Minimal pybind11 tutorial example for foga."
 requires-python = ">=3.10"
 dependencies = [
-    "foga",
-]
-
-[project.optional-dependencies]
-dev = [
     "build>=1.2",
+    "foga",
 ]
 
 [tool.scikit-build]

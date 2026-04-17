@@ -43,7 +43,6 @@ test:
 
 format:
   default: python
-  default_targets: ["python-style"]
   targets:
     python-style:
       backend: ruff-format
@@ -52,7 +51,6 @@ format:
 
 lint:
   default: python
-  default_targets: ["python-style"]
   targets:
     python-style:
       backend: ruff-check

@@ -30,13 +30,9 @@ Run these commands to verify the example:
 
 ```bash
 foga validate
-foga install --target dev
 foga build
-```
-
-Useful follow-up commands:
-
-```bash
 foga inspect
 foga clean
 ```
+
+The shell starts with the project `.venv` already active.

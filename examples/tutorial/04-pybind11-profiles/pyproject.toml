@@ -11,12 +11,12 @@ version = "0.1.0"
 description = "Profiled pybind11 tutorial example for foga."
 requires-python = ">=3.10"
 dependencies = [
+    "build>=1.2",
     "foga",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "build>=1.2",
     "pytest>=8.0",
     "ruff>=0.11",
 ]
