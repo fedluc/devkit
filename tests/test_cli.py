@@ -262,6 +262,10 @@ test:
             },
         }
     }
+    assert document["planned_commands"] == [
+        "cmake -S cpp -B build",
+        "cmake --build build --parallel --target cli-target",
+    ]
 
 
 def test_inspect_build_full_outputs_resolved_config(tmp_path: Path, capsys) -> None:
@@ -316,6 +320,10 @@ test:
         "targets": ["cli-target"],
     }
     assert document["resolved_config"]["build"]["cpp"]["targets"] == ["cli-target"]
+    assert document["planned_commands"] == [
+        "cmake -S cpp -B build",
+        "cmake --build build --parallel --target cli-target",
+    ]
 
 
 def test_inspect_reports_selected_test_runners(tmp_path: Path, capsys) -> None:
@@ -373,6 +381,7 @@ test:
             }
         }
     }
+    assert document["planned_commands"] == ["tox -e py311"]
 
 
 def test_inspect_reports_default_test_runners(tmp_path: Path, capsys) -> None:
@@ -421,10 +430,14 @@ test:
             },
         }
     }
+    assert document["planned_commands"] == ["tox -e py311"]
 
 
 def test_inspect_reports_default_deploy_targets(tmp_path: Path, capsys) -> None:
     """Inspect deploy reflects configured default target selection."""
+    artifact = tmp_path / "dist" / "demo-0.1.0-py3-none-any.whl"
+    artifact.parent.mkdir()
+    artifact.write_text("wheel", encoding="utf-8")
     config = tmp_path / "foga.yml"
     config.write_text(
         """
@@ -466,6 +479,9 @@ deploy:
             },
         }
     }
+    assert document["planned_commands"] == [
+        f"twine upload --repository testpypi {artifact}"
+    ]
 
 
 def test_inspect_build_rejects_target_override_for_python_selection(
@@ -489,6 +505,200 @@ def test_inspect_build_rejects_target_override_for_python_selection(
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "`inspect build --target` can only be used with cpp builds" in captured.err
+
+
+def test_inspect_reports_default_docs_targets(tmp_path: Path, capsys) -> None:
+    """Inspect docs reflects configured default target selection."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+docs:
+  default_targets: ["html"]
+  targets:
+    html:
+      backend: sphinx
+      source_dir: docs
+      build_dir: docs/_build/html
+    api:
+      backend: mkdocs
+      config_file: mkdocs.yml
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "inspect", "docs"])
+
+    captured = capsys.readouterr()
+    document = yaml.safe_load(captured.out)
+    assert exit_code == 0
+    assert document["summary"] == {
+        "command": "docs",
+        "targets": ["html"],
+    }
+    assert document["effective_config"] == {
+        "docs": {
+            "default_targets": ["html"],
+            "targets": {
+                "html": {
+                    "backend": "sphinx",
+                    "source_dir": "docs",
+                    "build_dir": "docs/_build/html",
+                }
+            },
+        }
+    }
+    assert document["planned_commands"] == [
+        "sphinx-build -b html docs docs/_build/html"
+    ]
+
+
+def test_inspect_reports_selected_format_targets(tmp_path: Path, capsys) -> None:
+    """Inspect format reflects the selected kind and target filters."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+format:
+  default: python
+  default_targets: ["python-style"]
+  targets:
+    python-style:
+      backend: ruff-format
+      paths: ["src", "tests"]
+    cpp-style:
+      backend: clang-format
+      paths: ["cpp"]
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(
+        [
+            "--config",
+            str(config),
+            "inspect",
+            "format",
+            "python",
+            "--target",
+            "python-style",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    document = yaml.safe_load(captured.out)
+    assert exit_code == 0
+    assert document["summary"] == {
+        "command": "format",
+        "selection": "python",
+        "targets": ["python-style"],
+    }
+    assert document["effective_config"] == {
+        "format": {
+            "default": "python",
+            "default_targets": ["python-style"],
+            "targets": {
+                "python-style": {
+                    "backend": "ruff-format",
+                    "paths": ["src", "tests"],
+                }
+            },
+        }
+    }
+    assert document["planned_commands"] == ["ruff format src tests"]
+
+
+def test_inspect_reports_default_install_targets(tmp_path: Path, capsys) -> None:
+    """Inspect install reflects configured default target selection."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+install:
+  default_targets: ["editable"]
+  targets:
+    editable:
+      backend: pip
+      path: .
+      editable: true
+    system:
+      backend: apt-get
+      packages: ["cmake"]
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "inspect", "install"])
+
+    captured = capsys.readouterr()
+    document = yaml.safe_load(captured.out)
+    assert exit_code == 0
+    assert document["summary"] == {
+        "command": "install",
+        "targets": ["editable"],
+    }
+    assert document["effective_config"] == {
+        "install": {
+            "default_targets": ["editable"],
+            "targets": {
+                "editable": {
+                    "backend": "pip",
+                    "path": ".",
+                    "editable": True,
+                }
+            },
+        }
+    }
+    assert document["planned_commands"] == ["python3 -m pip install -e ."]
+
+
+def test_inspect_reports_default_lint_targets(tmp_path: Path, capsys) -> None:
+    """Inspect lint reflects configured default target selection."""
+    config = tmp_path / "foga.yml"
+    config.write_text(
+        """
+project:
+  name: demo
+lint:
+  default: python
+  default_targets: ["python-style"]
+  targets:
+    python-style:
+      backend: ruff-check
+      paths: ["src", "tests"]
+    cpp-style:
+      backend: clang-tidy
+      paths: ["cpp"]
+""",
+        encoding="utf-8",
+    )
+
+    exit_code = cli.main(["--config", str(config), "inspect", "lint"])
+
+    captured = capsys.readouterr()
+    document = yaml.safe_load(captured.out)
+    assert exit_code == 0
+    assert document["summary"] == {
+        "command": "lint",
+        "selection": "python",
+        "targets": ["python-style"],
+    }
+    assert document["effective_config"] == {
+        "lint": {
+            "default": "python",
+            "default_targets": ["python-style"],
+            "targets": {
+                "python-style": {
+                    "backend": "ruff-check",
+                    "paths": ["src", "tests"],
+                }
+            },
+        }
+    }
+    assert document["planned_commands"] == ["ruff check src tests"]
 
 
 def test_build_dry_run_routes_to_executor(tmp_path: Path, monkeypatch) -> None:
