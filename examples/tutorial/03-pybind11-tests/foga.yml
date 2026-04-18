@@ -11,13 +11,13 @@ build:
     targets: ["hello_cli"]
   python:
     backend: python-build
-    launcher: ["uv", "run"]
 
 install:
   targets:
     dev:
-      backend: uv
-      extras: ["dev"]
+      backend: pip
+      path: ".[dev]"
+      editable: true
     system:
       backend: apt-get
       args: ["-y"]
@@ -32,7 +32,6 @@ test:
     unit:
       backend: pytest
       path: tests
-      launcher: ["uv", "run"]
     cpp:
       backend: ctest
       source_dir: cpp
@@ -47,7 +46,6 @@ format:
     python-style:
       backend: ruff-format
       paths: ["src", "tests"]
-      launcher: ["uv", "run"]
 
 lint:
   default: python
@@ -55,7 +53,6 @@ lint:
     python-style:
       backend: ruff-check
       paths: ["src", "tests"]
-      launcher: ["uv", "run"]
 
 clean:
   paths:
@@ -63,6 +60,5 @@ clean:
     - build-cpp-tests
     - build-wheel
     - dist
-    - .venv
     - .pytest_cache
     - .ruff_cache

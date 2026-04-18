@@ -16,18 +16,10 @@ else
   exit 1
 fi
 
-cat <<'EOF'
-The container will start in /workspace/example with the project .venv already active.
-These commands should work immediately:
-  foga validate
-  foga build python
-  foga build cpp
-  foga build --profile release cpp
-  foga test
-  foga test --profile release cpp
-  foga lint
-  foga inspect --profile release build cpp
-  foga clean
-EOF
+echo "Environment ready."
+echo "Instructions will be shown inside the container."
+echo
+echo "Entering container..."
+echo
 
 exec docker run --rm -it "${IMAGE_NAME}" bash -i

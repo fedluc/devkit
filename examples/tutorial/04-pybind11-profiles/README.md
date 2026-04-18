@@ -8,8 +8,8 @@ It shows:
 - a default debug-oriented C++ build
 - a `release` profile with a separate build directory and `Release` flags
 - matching `ctest` runs for both build modes
-- a Dockerfile that installs `foga` through `uv sync` and native tooling through
-  `foga install --target system`
+- a Docker image that installs `foga` from PyPI before you install the example
+  package and native tooling inside the container
 
 Files:
 
@@ -33,14 +33,19 @@ Run these commands to verify the example:
 
 ```bash
 foga validate
+foga install --target system
+foga install --target dev
 foga build python
 foga build cpp
 foga build --profile release cpp
 foga test
 foga test --profile release cpp
+foga format --dry-run
 foga lint
 foga inspect --profile release build cpp
 foga clean
 ```
 
-The shell starts with the project `.venv` already active.
+The example runs directly in the container's Python environment without a
+separate project virtual environment. The container also shows a short
+instructions file automatically when the interactive shell starts.

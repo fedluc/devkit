@@ -8,8 +8,8 @@ It shows:
 - Python tests for the `pybind11` module
 - C++ tests driven through `ctest`
 - Python `ruff format` and `ruff check` targets
-- a Dockerfile that installs `foga` through `uv sync` and the native build
-  toolchain through `foga install --target system`
+- a Docker image that installs `foga` from PyPI before you install the example
+  package and native tooling inside the container
 
 Files:
 
@@ -33,11 +33,18 @@ Run these commands to verify the example:
 
 ```bash
 foga validate
-foga build
+foga install --target system
+foga install --target dev
+foga build cpp
+./build-cpp/hello_cli
+foga build python
 foga test
+foga format --dry-run
 foga lint
 foga inspect test
 foga clean
 ```
 
-The shell starts with the project `.venv` already active.
+The example runs directly in the container's Python environment without a
+separate project virtual environment. The container also shows a short
+instructions file automatically when the interactive shell starts.
