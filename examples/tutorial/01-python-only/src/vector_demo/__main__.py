@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+import numpy as np
 from rich.console import Console
 
-from .math_ops import centered_norm
+
+def centered_norm(values: list[float]) -> float:
+    data = np.asarray(values, dtype=float)
+    centered = data - data.mean()
+    return float(np.linalg.norm(centered))
 
 
 def main() -> None:

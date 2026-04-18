@@ -10,6 +10,4 @@ COPY pyproject.toml foga.yml /workspace/example/
 COPY container-welcome.txt /workspace/example/container-welcome.txt
 COPY src /workspace/example/src
 
-RUN python -m pip install --no-cache-dir -e . \
-    && python -m build --version >/dev/null \
-    && printf '\nif [ -z "${FOGA_TUTORIAL_WELCOME_SHOWN:-}" ]; then\n  export FOGA_TUTORIAL_WELCOME_SHOWN=1\n  cat /workspace/example/container-welcome.txt\nfi\n' >> /root/.bashrc
+RUN printf '\nif [ -z "${FOGA_TUTORIAL_WELCOME_SHOWN:-}" ]; then\n  export FOGA_TUTORIAL_WELCOME_SHOWN=1\n  cat /workspace/example/container-welcome.txt\nfi\n' >> /root/.bashrc

@@ -8,8 +8,7 @@ It shows:
 - a small shared C++ greeting implementation
 - a standalone CMake executable built through `build cpp`
 - a Python package built through `build python`
-- a Dockerfile that installs `foga` through `uv sync` and native tooling through
-  `foga install --target system`
+- a Dockerfile that installs `foga` from PyPI in a clean container environment
 
 Files:
 
@@ -32,10 +31,15 @@ Run these commands to verify the example:
 
 ```bash
 foga validate
+foga install --target system
 foga build cpp
+./build-cpp/hello_cli
 foga build python
+foga install --target dev
+hello-demo
 foga inspect build cpp
-foga clean
 ```
 
-The shell starts with the project `.venv` already active.
+The example runs directly in the container's Python environment without a
+separate project virtual environment. The container also shows a short
+instructions file automatically when the interactive shell starts.

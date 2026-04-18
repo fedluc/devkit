@@ -12,8 +12,11 @@ description = "Minimal pybind11 tutorial example for foga."
 requires-python = ">=3.10"
 dependencies = [
     "build>=1.2",
-    "foga",
+    "rich>=14.0",
 ]
+
+[project.scripts]
+hello-demo = "hello_bindings.__main__:main"
 
 [tool.scikit-build]
 build-dir = "build-wheel"

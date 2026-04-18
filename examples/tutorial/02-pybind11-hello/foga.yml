@@ -11,13 +11,13 @@ build:
     targets: ["hello_cli"]
   python:
     backend: python-build
-    launcher: ["uv", "run"]
 
 install:
   targets:
     dev:
-      backend: uv
-      extras: ["dev"]
+      backend: pip
+      path: .
+      editable: true
     system:
       backend: apt-get
       args: ["-y"]
@@ -31,4 +31,3 @@ clean:
     - build-cpp
     - build-wheel
     - dist
-    - .venv
