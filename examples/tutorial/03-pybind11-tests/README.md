@@ -13,7 +13,7 @@ and adds both test workflows and Python linting.
 ## Start the example
 
 ```bash
-./run-example.sh
+python run-example.py
 ```
 
 ## Inside the container

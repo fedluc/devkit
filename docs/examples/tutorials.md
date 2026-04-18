@@ -20,13 +20,15 @@ without forcing you to absorb a large real-world repository first.
 
 ## How to run them
 
+Prerequisites: Docker and Python must be installed and available on `PATH`.
+
 Each tutorial directory is self-contained. You can copy one folder anywhere,
-run its `run-example.sh` script, and then use the interactive container session
+run `python run-example.py`, and then use the interactive container session
 as the example workspace.
 
 The script always rebuilds the Docker image with `--no-cache` and starts a
-fresh container in `/workspace/example`, so users do not need any local Python
-or C++ toolchain beyond Docker itself.
+fresh container in `/workspace/example`, so users do not need any local C++
+toolchain for the example itself.
 
 The per-example README lists the concrete `foga` commands to run once the shell
 opens.

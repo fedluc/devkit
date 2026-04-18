@@ -13,7 +13,7 @@ build separate from the Python package build.
 ## Start the example
 
 ```bash
-./run-example.sh
+python run-example.py
 ```
 
 ## Inside the container

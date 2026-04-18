@@ -12,7 +12,7 @@ This is the smallest runnable `foga` example in the repository.
 ## Start the example
 
 ```bash
-./run-example.sh
+python run-example.py
 ```
 
 ## Inside the container

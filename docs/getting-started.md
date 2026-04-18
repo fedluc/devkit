@@ -37,7 +37,7 @@ test:
 If you want a runnable repository to copy from instead of starting from a blank
 file, use the [tutorial examples](examples/tutorials.md). They follow the same
 incremental adoption path but include working project files and self-contained
-`run-example.sh` entry scripts.
+`run-example.py` entry scripts.
 
 ## First commands
 

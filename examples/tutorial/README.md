@@ -16,8 +16,10 @@ Read them in order:
    debug and release C++ build modes to the mixed project from the previous
    example.
 
+Prerequisites: Docker and Python must be installed and available on `PATH`.
+
 Each tutorial folder is self-contained. You can copy any one of them to another
-location, run its `run-example.sh` script, and then exercise the example from
+location, run `python run-example.py`, and then exercise the example from
 inside the interactive container session.
 
 Once these examples feel familiar, move to the larger real-world references in

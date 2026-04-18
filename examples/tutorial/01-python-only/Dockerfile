@@ -7,7 +7,4 @@ WORKDIR /workspace/example
 RUN python -m pip install --no-cache-dir foga
 
 COPY pyproject.toml foga.yml /workspace/example/
-COPY example-instructions.md /workspace/example/example-instructions.md
 COPY src /workspace/example/src
-
-RUN printf '\nif [ -z "${FOGA_TUTORIAL_INSTRUCTIONS_SHOWN:-}" ]; then\n  export FOGA_TUTORIAL_INSTRUCTIONS_SHOWN=1\n  cat /workspace/example/example-instructions.md\nfi\n' >> /root/.bashrc
