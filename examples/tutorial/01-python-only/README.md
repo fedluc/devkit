@@ -5,10 +5,10 @@ This is the smallest runnable `foga` example in the repository.
 It shows:
 
 - a pure Python package with `numpy` and `rich`
-- a `uv`-based development install
+- a plain `pip`-based development install
 - a `python-build` package build
 - a dedicated Docker environment so the example does not touch the host machine
-- a self-contained `uv` project that installs `foga` from PyPI
+- a Docker image that installs `foga` from PyPI before installing the example package
 
 Files:
 
@@ -31,8 +31,11 @@ Run these commands to verify the example:
 ```bash
 foga validate
 foga build
+foga install --target dev
+vector-demo
 foga inspect
-foga clean
 ```
 
-The shell starts with the project `.venv` already active.
+The example runs directly in the container's Python environment without a
+separate project virtual environment. The container also shows a short
+instructions file automatically when the interactive shell starts.

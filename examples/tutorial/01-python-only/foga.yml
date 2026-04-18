@@ -4,15 +4,14 @@ project:
 build:
   python:
     backend: python-build
-    launcher: ["uv", "run"]
 
 install:
   targets:
     dev:
-      backend: uv
-      extras: ["dev"]
+      backend: pip
+      path: .
+      editable: true
 
 clean:
   paths:
     - dist
-    - .venv

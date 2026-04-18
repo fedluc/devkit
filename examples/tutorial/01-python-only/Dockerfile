@@ -1,17 +1,15 @@
 FROM python:3.12-bookworm
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    UV_LINK_MODE=copy \
-    VIRTUAL_ENV=/workspace/example/.venv \
-    PATH=/workspace/example/.venv/bin:${PATH}
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /workspace/example
 
-RUN python -m pip install --no-cache-dir uv
+RUN python -m pip install --no-cache-dir foga
 
 COPY pyproject.toml foga.yml /workspace/example/
+COPY container-welcome.txt /workspace/example/container-welcome.txt
 COPY src /workspace/example/src
 
-RUN uv sync \
-    && uv run python -m build --version >/dev/null \
-    && printf '\nsource /workspace/example/.venv/bin/activate\n' >> /root/.bashrc
+RUN python -m pip install --no-cache-dir -e . \
+    && python -m build --version >/dev/null \
+    && printf '\nif [ -z "${FOGA_TUTORIAL_WELCOME_SHOWN:-}" ]; then\n  export FOGA_TUTORIAL_WELCOME_SHOWN=1\n  cat /workspace/example/container-welcome.txt\nfi\n' >> /root/.bashrc
