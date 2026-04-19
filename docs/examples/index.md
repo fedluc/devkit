@@ -1,12 +1,12 @@
 # Examples
 
-The repository includes both staged tutorial examples and larger real-world
+The repository organizes examples into guided tutorials and larger real-world
 reference configurations.
 
 ## Start here
 
-- [Tutorial examples](tutorials.md): four runnable examples that ramp up from a
-  pure-Python package to mixed C++/Python workflows with tests and profiles
+- [Tutorial examples](tutorials.md): guided examples that start small and add
+  one idea at a time while you learn `foga`
 
 ## Real-world examples
 

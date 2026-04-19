@@ -1,26 +1,28 @@
 # Tutorial examples
 
-These examples are designed as a small ladder instead of a single large
-reference project.
+Start with these examples when you want a smaller path into `foga` before
+reading the denser reference projects.
 
 Read them in order:
 
-1. [`01-python-only`](01-python-only/README.md): pure Python package with build
-   and install workflows in a containerized example environment.
-2. [`02-pybind11-hello`](02-pybind11-hello/README.md): adds a tiny `pybind11`
-   module and shows native dependency installation through `foga install` and
-   `apt-get` inside Docker.
-3. [`03-pybind11-tests`](03-pybind11-tests/README.md): extends the mixed project
-   with Python tests, C++ tests, and Python lint and format targets.
-4. [`04-pybind11-profiles`](04-pybind11-profiles/README.md): adds profile-driven
-   debug and release C++ build modes to the mixed project from the previous
-   example.
+1. [`01-python-only`](01-python-only/README.md): the smallest end-to-end
+   project shape in the repository.
+2. [`02-pybind11-hello`](02-pybind11-hello/README.md): the first step from pure
+   Python into a mixed Python/C++ project.
+3. [`03-pybind11-tests`](03-pybind11-tests/README.md): the same mixed project
+   shape extended with tests and code quality checks.
+4. [`04-pybind11-profiles`](04-pybind11-profiles/README.md): the same project
+   shape extended with profile-specific build behavior.
 
-Prerequisites: Docker and Python must be installed and available on `PATH`.
+## Running the tutorials
 
-Each tutorial folder is self-contained. You can copy any one of them to another
-location, run `python run-example.py`, and then exercise the example from
-inside the interactive container session.
+Each example README lists the local prerequisites for running it directly on
+your machine.
+
+If you are using this repository checkout and want the Docker shortcut, run
+`python examples/tutorial/run-example.py --list` to see the available examples,
+then run `python examples/tutorial/run-example.py <example-name>` from the
+repository root.
 
 Once these examples feel familiar, move to the larger real-world references in
 [`examples/qupled`](../qupled/README.md) and

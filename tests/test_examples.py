@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -33,3 +35,19 @@ def test_example_configs_validate(
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "Validation OK" in captured.out
+
+
+def test_tutorial_runner_lists_examples() -> None:
+    """The shared tutorial runner should advertise the available examples."""
+    script_path = ROOT / "examples/tutorial/run-example.py"
+
+    result = subprocess.run(
+        [sys.executable, str(script_path), "--list"],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "01-python-only" in result.stdout
+    assert "04-pybind11-profiles" in result.stdout

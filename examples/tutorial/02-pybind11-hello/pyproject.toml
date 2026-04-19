@@ -8,8 +8,6 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "hello-bindings-basic"
 version = "0.1.0"
-description = "Minimal pybind11 tutorial example for foga."
-requires-python = ">=3.10"
 dependencies = [
     "build>=1.2",
     "rich>=14.0",

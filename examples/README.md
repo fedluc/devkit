@@ -1,13 +1,12 @@
 # Examples
 
-This directory contains runnable `foga` configurations that cover both guided
-tutorials and real-world reference projects.
+These examples are organized into guided tutorials and larger reference
+projects.
 
 ## Tutorial examples
 
-- [`tutorial`](tutorial/README.md): four examples that ramp up from a
-  pure-Python package to a mixed C++/Python project with tests, linting, and
-  profile-based build modes.
+- [`tutorial`](tutorial/README.md): staged examples that start small and add
+  one new idea at a time.
 
 ## Real-world reference examples
 

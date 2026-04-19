@@ -43,9 +43,9 @@ test:
 
 For runnable examples that build up gradually, start with
 [`examples/tutorial/`](examples/tutorial/) or the
-[Examples guide](docs/examples/tutorials.md). The tutorial examples are
-self-contained folders: copy one wherever you want, run its `run-docker.sh`
-script, and then exercise `foga` from the interactive container session.
+[Examples guide](docs/examples/tutorials.md). Each tutorial README lists the
+local prerequisites, and this repository also includes
+`examples/tutorial/run-example.py` if you want a Docker-based shortcut.
 
 ## Quick start
 

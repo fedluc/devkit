@@ -7,22 +7,28 @@ This is the smallest runnable `foga` example in the repository.
 - how to start from a minimal `foga` project
 - how to validate a config before running workflows
 - how to build and install a Python package through `foga`
-- how to exercise the example in an isolated container without touching the host
 
-## Start the example
+## Local prerequisites
 
-```bash
-python run-example.py
-```
+- Python 3.10+
+- `foga`
 
-## Inside the container
-
-Run these commands to verify the example:
+## Run locally
 
 ```bash
 foga validate
-foga build
 foga install --target dev
+foga build
 vector-demo
 foga inspect
 ```
+
+## Docker shortcut
+
+From the repository root:
+
+```bash
+python examples/tutorial/run-example.py 01-python-only
+```
+
+Then run the same `foga` commands inside the container shell.

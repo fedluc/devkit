@@ -10,23 +10,33 @@ build separate from the Python package build.
 - how to build the C++ and Python sides separately
 - how to move from a pure Python example to a simple binding workflow
 
-## Start the example
+## Local prerequisites
 
-```bash
-python run-example.py
-```
+- Python 3.10+
+- `foga`
+- a C++ compiler
+- CMake
+- Ninja
 
-## Inside the container
-
-Run these commands to verify the example:
+## Run locally
 
 ```bash
 foga validate
-foga install --target system
+foga install --target dev
 foga build cpp
 ./build-cpp/hello_cli
 foga build python
-foga install --target dev
 hello-demo
 foga inspect build cpp
 ```
+
+## Docker shortcut
+
+From the repository root:
+
+```bash
+python examples/tutorial/run-example.py 02-pybind11-hello
+```
+
+Then run `foga install --target system` once inside the container, followed by
+the same commands shown above.

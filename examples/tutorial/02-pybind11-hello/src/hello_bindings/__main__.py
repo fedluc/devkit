@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rich.console import Console
 
-from . import greet
+from ._core import greet
 
 
 def main() -> None:

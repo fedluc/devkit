@@ -10,19 +10,18 @@ and adds profile-driven build modes for the C++ side.
 - how to compare default and release workflows from the same tutorial
 - how to grow a validated example without duplicating the whole setup
 
-## Start the example
+## Local prerequisites
 
-```bash
-python run-example.py
-```
+- Python 3.10+
+- `foga`
+- a C++ compiler
+- CMake
+- Ninja
 
-## Inside the container
-
-Run these commands to verify the example:
+## Run locally
 
 ```bash
 foga validate
-foga install --target system
 foga install --target dev
 foga build python
 foga build cpp
@@ -34,3 +33,14 @@ foga lint
 foga inspect --profile release build cpp
 foga clean
 ```
+
+## Docker shortcut
+
+From the repository root:
+
+```bash
+python examples/tutorial/run-example.py 04-pybind11-profiles
+```
+
+Then run `foga install --target system` once inside the container, followed by
+the same commands shown above.
