@@ -1,7 +1,14 @@
 # Examples
 
-This directory contains concrete `foga` configurations derived from real
+These examples are organized into guided tutorials and larger reference
 projects.
+
+## Tutorial examples
+
+- [`tutorial`](tutorial/README.md): staged examples that start small and add
+  one new idea at a time.
+
+## Real-world reference examples
 
 - [`qupled`](qupled/README.md): C++ CMake build, Python packaging, pytest
   suites, and a `ctest` C++ test runner with MPI-related profiles.

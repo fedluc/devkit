@@ -34,6 +34,10 @@ test:
       path: tests
 ```
 
+If you want a runnable repository to copy from instead of starting from a blank
+file, use the [tutorial examples](examples/tutorials.md). They follow the same
+incremental adoption path and include working project files.
+
 ## First commands
 
 These examples assume you are running `foga` from a project root that contains

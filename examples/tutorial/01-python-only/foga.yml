@@ -1,0 +1,17 @@
+project:
+  name: python-only-example
+
+build:
+  python:
+    backend: python-build
+
+install:
+  targets:
+    dev:
+      backend: pip
+      path: .
+      editable: true
+
+clean:
+  paths:
+    - dist

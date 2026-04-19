@@ -37,8 +37,10 @@ development
 
 ## Example projects
 
-The repository includes example configurations derived from real projects:
+The repository includes two kinds of examples:
 
+- [Tutorial examples](examples/tutorials.md): staged starting points that help
+  you learn `foga` one step at a time before you adapt it to a larger project
 - [`qupled`](examples/qupled.md): mixed Python/C++ project with C++ CMake
   builds, Python packaging, pytest suites, and profile overrides
 - [`pybind11`](examples/pybind11.md): pinned containerized example that runs

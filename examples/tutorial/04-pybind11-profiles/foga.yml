@@ -1,0 +1,80 @@
+project:
+  name: pybind11-profiled-example
+
+build:
+  default: all
+  cpp:
+    backend: cmake
+    source_dir: cpp
+    build_dir: build-cpp-debug
+    generator: Ninja
+    configure_args: ["-DCMAKE_BUILD_TYPE=Debug"]
+    targets: ["hello_cli"]
+  python:
+    backend: python-build
+
+install:
+  targets:
+    dev:
+      backend: pip
+      path: ".[dev]"
+      editable: true
+    system:
+      backend: apt-get
+      args: ["-y"]
+      packages: ["build-essential", "cmake", "ninja-build"]
+      hooks:
+        pre:
+          - ["apt-get", "update"]
+
+test:
+  default: all
+  runners:
+    unit:
+      backend: pytest
+      path: tests
+    cpp:
+      backend: ctest
+      source_dir: cpp
+      build_dir: build-cpp-tests-debug
+      generator: Ninja
+      configure_args: ["-DCMAKE_BUILD_TYPE=Debug"]
+      target: hello_cpp_tests
+      args: ["--output-on-failure"]
+
+format:
+  default: python
+  targets:
+    python-style:
+      backend: ruff-format
+      paths: ["src", "tests"]
+
+lint:
+  default: python
+  targets:
+    python-style:
+      backend: ruff-check
+      paths: ["src", "tests"]
+
+profiles:
+  release:
+    build:
+      cpp:
+        build_dir: build-cpp-release
+        configure_args: ["-DCMAKE_BUILD_TYPE=Release"]
+    test:
+      runners:
+        cpp:
+          build_dir: build-cpp-tests-release
+          configure_args: ["-DCMAKE_BUILD_TYPE=Release"]
+
+clean:
+  paths:
+    - build-cpp-debug
+    - build-cpp-release
+    - build-cpp-tests-debug
+    - build-cpp-tests-release
+    - build-wheel
+    - dist
+    - .pytest_cache
+    - .ruff_cache
