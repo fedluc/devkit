@@ -10,17 +10,12 @@ ENV PIP_ROOT_USER_ACTION=ignore \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        cmake \
         git \
-        ninja-build \
-        python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY examples/pybind11/foga.yml /tmp/foga.yml
 
-RUN python3 -m pip install --no-cache-dir \
-        build \
-        foga
+RUN python3 -m pip install --no-cache-dir foga
 
 WORKDIR /workspaces
 
@@ -31,3 +26,6 @@ RUN git clone --depth 1 "${PYBIND11_REPO}" pybind11 \
     && cp /tmp/foga.yml /workspaces/pybind11/foga.yml
 
 WORKDIR /workspaces/pybind11
+
+RUN foga install --target system
+RUN foga install --target python-deps

@@ -37,25 +37,19 @@ def run_container(image_name: str, command: list[str]) -> int:
     """Run the pybind11 example container with the requested command."""
 
     result = subprocess.run(
-        ["docker", "run", "--rm", image_name, *command],
+        ["docker", "run", "--rm", "-it", image_name, *command],
         check=False,
     )
     return result.returncode
 
 
 def main(argv: list[str]) -> int:
-    """Build the pybind11 example image and run a command inside it."""
+    """Build the pybind11 example image and open a shell by default."""
 
     require_docker()
     repo_root = Path(__file__).resolve().parents[2]
     image_name = os.environ.get("FOGA_EXAMPLE_IMAGE", "foga-example-pybind11")
-    command = argv[1:] if len(argv) > 1 else [
-        "foga",
-        "build",
-        "--profile",
-        "cpptest",
-        "cpp",
-    ]
+    command = argv[1:] if len(argv) > 1 else ["bash"]
 
     build_image(repo_root, image_name)
     return run_container(image_name, command)
