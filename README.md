@@ -55,10 +55,12 @@ Docker and Python instead of installing the example-specific tools locally.
 
 If you are using Codex or another agentic tool to draft `foga.yml`, give it the
 repository's existing build, test, docs, and deploy commands and ask it to map
-them to built-in `foga` backends first. If your environment provides a
-dedicated config-authoring skill, use that. Then verify the result with
-`foga validate`, `foga inspect`, and dry-run commands before replacing scripts
-or CI jobs.
+them to built-in `foga` backends first. If you are using Codex or another tool
+that supports local skills, use the skill at
+[`skills/foga-config-authoring/SKILL.md`](skills/foga-config-authoring/SKILL.md)
+to generate a `foga.yml` file or at least a first draft/skeleton. Then verify
+the result with `foga validate`, `foga inspect`, and dry-run commands before
+replacing scripts or CI jobs.
 
 ## Common commands
 
