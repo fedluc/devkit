@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from ..config.constants import BUILD_SECTION, CPP_WORKFLOW_KIND
-from ..config.models import BuildConfig, CppBuildConfig, PythonBuildConfig
+from ..config.models import (
+    BuildConfig,
+    CppBuildConfig,
+    MesonBuildConfig,
+    PythonBuildConfig,
+)
 from ..errors import ConfigError
 from ..executor import CommandSpec
 from .common import prepend_launcher, split_hooks
@@ -13,9 +18,9 @@ from .contracts import (
     WorkflowPlan,
     require_backend_contract,
 )
-from .kinds import BUILD_CMAKE, BUILD_PYTHON
+from .kinds import BUILD_CMAKE, BUILD_MESON, BUILD_PYTHON
 
-BuildBackendConfig = CppBuildConfig | PythonBuildConfig
+BuildBackendConfig = CppBuildConfig | MesonBuildConfig | PythonBuildConfig
 PYTHON_BUILD_COMMAND = ["python3", "-m", "build"]
 
 
@@ -141,6 +146,66 @@ def _python_build_plan(
     return specs
 
 
+def _meson_plan(config: MesonBuildConfig, request: BuildRequest) -> list[CommandSpec]:
+    """Build Meson setup and compile commands for a C++ workflow.
+
+    Args:
+        config: Parsed Meson build configuration.
+        request: Build planning options.
+
+    Returns:
+        Command specs for the setup step and one or more compile steps.
+    """
+
+    pre_hooks, post_hooks = split_hooks(config.hooks, CPP_WORKFLOW_KIND)
+    setup_command = [
+        "meson",
+        "setup",
+        config.build_dir,
+        config.source_dir,
+        *config.setup_args,
+    ]
+    specs = pre_hooks + [
+        CommandSpec(
+            command=prepend_launcher(setup_command, config.launcher),
+            env=config.env,
+            description="meson setup",
+        )
+    ]
+
+    active_targets = request.targets if request.targets else config.targets
+    compile_command = [
+        "meson",
+        "compile",
+        "-C",
+        config.build_dir,
+        *config.compile_args,
+    ]
+    if active_targets:
+        for target in active_targets:
+            specs.append(
+                CommandSpec(
+                    command=prepend_launcher(
+                        compile_command + [target],
+                        config.launcher,
+                    ),
+                    env=config.env,
+                    description=f"meson compile target `{target}`",
+                )
+            )
+    else:
+        specs.append(
+            CommandSpec(
+                command=prepend_launcher(compile_command, config.launcher),
+                env=config.env,
+                description="meson compile",
+            )
+        )
+
+    specs.extend(post_hooks)
+    return specs
+
+
 def _validate_cpp_build(config: BuildBackendConfig) -> None:
     """Validate the C++ build contract input.
 
@@ -153,6 +218,20 @@ def _validate_cpp_build(config: BuildBackendConfig) -> None:
 
     if not isinstance(config, CppBuildConfig):
         raise ConfigError("The `cmake` backend requires a C++ build configuration")
+
+
+def _validate_meson_build(config: BuildBackendConfig) -> None:
+    """Validate the Meson build contract input.
+
+    Args:
+        config: Parsed build backend configuration.
+
+    Raises:
+        ConfigError: If the config is not a Meson build configuration.
+    """
+
+    if not isinstance(config, MesonBuildConfig):
+        raise ConfigError("The `meson` backend requires a Meson build configuration")
 
 
 def _validate_python_build(config: BuildBackendConfig) -> None:
@@ -176,6 +255,11 @@ BUILD_BACKENDS: dict[str, BackendContract[BuildBackendConfig, BuildRequest]] = {
         name=BUILD_CMAKE,
         validate=_validate_cpp_build,
         plan=_cmake_plan,
+    ),
+    BUILD_MESON: BackendContract(
+        name=BUILD_MESON,
+        validate=_validate_meson_build,
+        plan=_meson_plan,
     ),
     BUILD_PYTHON: BackendContract(
         name=BUILD_PYTHON,
