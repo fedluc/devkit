@@ -33,10 +33,11 @@ foga test
 
 `build.cpp` uses the `meson` backend to compile NumPy's native extension tree in
 `build-foga` independently from the Python packaging workflow. Inside the
-example container, the Docker image installs a `meson` wrapper that forwards to
-NumPy's vendored Meson entrypoint, because upstream NumPy requires that patched
-Meson build. `build.python` still uses `python-build` for wheels and sdists, so
-you can exercise the native and Python build paths separately when needed.
+example container, the Docker image prepends a `meson` wrapper on `PATH` that
+forwards to NumPy's vendored Meson entrypoint, because upstream NumPy requires
+that patched Meson build. `build.python` still uses `python-build` for wheels
+and sdists, so you can exercise the native and Python build paths separately
+when needed.
 
 `foga test` installs the `test-env` target in a pre-hook so `pytest` and the
 editable package are available before the test runner starts.

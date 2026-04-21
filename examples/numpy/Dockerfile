@@ -5,6 +5,7 @@ ARG NUMPY_REPO=https://github.com/numpy/numpy.git
 ARG NUMPY_REF=v2.4.4
 
 ENV PIP_ROOT_USER_ACTION=ignore \
+    PATH=/opt/foga-bin:${PATH} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
@@ -25,11 +26,12 @@ RUN git clone --depth 1 "${NUMPY_REPO}" numpy \
     && cd numpy \
     && git fetch --depth 1 origin "${NUMPY_REF}" \
     && git checkout --detach FETCH_HEAD \
-    && cp /tmp/foga.yml /workspaces/numpy/foga.yml \
-    && printf '%s\n' '#!/bin/sh' 'exec python3 /workspaces/numpy/vendored-meson/meson/meson.py "$@"' > /usr/local/bin/meson \
-    && chmod +x /usr/local/bin/meson
+    && cp /tmp/foga.yml /workspaces/numpy/foga.yml
 
 WORKDIR /workspaces/numpy
 
 RUN foga install --target system \
-    && foga install --target build-env
+    && foga install --target build-env \
+    && mkdir -p /opt/foga-bin \
+    && printf '%s\n' '#!/bin/sh' 'exec python3 /workspaces/numpy/vendored-meson/meson/meson.py "$@"' > /opt/foga-bin/meson \
+    && chmod +x /opt/foga-bin/meson
