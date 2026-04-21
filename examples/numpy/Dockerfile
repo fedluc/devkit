@@ -13,9 +13,11 @@ RUN apt-get update \
         git \
     && rm -rf /var/lib/apt/lists/*
 
+COPY pyproject.toml README.md /tmp/foga/
+COPY src /tmp/foga/src
 COPY examples/numpy/foga.yml /tmp/foga.yml
 
-RUN python3 -m pip install --no-cache-dir foga
+RUN python3 -m pip install --no-cache-dir /tmp/foga
 
 WORKDIR /workspaces
 

@@ -7,7 +7,7 @@ documentation.
 What it includes:
 
 - [`Dockerfile`](Dockerfile): clones NumPy in Docker, installs a released
-  `foga`, and prepares the base environment
+  `foga` from this checkout, and prepares the base environment
 - [`foga.yml`](foga.yml): a working `foga` configuration for the NumPy checkout
 - [`run-in-docker.py`](run-in-docker.py): helper that builds the image and
   opens a shell or runs a one-shot command in the container
