@@ -1,7 +1,8 @@
 # numpy
 
 This example shows `foga` driving a real upstream Python/native project with a
-source build, pytest-based tests, and Sphinx documentation.
+separate Meson native build, Python packaging, pytest-based tests, and Sphinx
+documentation.
 
 What it includes:
 
@@ -23,9 +24,17 @@ Once inside the container:
 
 ```bash
 foga validate
-foga build
+foga build cpp
+foga build python
 foga test
 ```
+
+`foga build` also works because this example sets `build.default: all`.
+
+`build.cpp` uses the `meson` backend to compile NumPy's native extension tree in
+`build-foga` independently from the Python packaging workflow. `build.python`
+still uses `python-build` for wheels and sdists, so you can exercise the native
+and Python build paths separately when needed.
 
 `foga test` installs the `test-env` target in a pre-hook so `pytest` and the
 editable package are available before the test runner starts.

@@ -2,6 +2,14 @@ project:
   name: numpy
 
 build:
+  default: all
+  cpp:
+    backend: meson
+    source_dir: .
+    build_dir: build-foga
+    hooks:
+      pre:
+        - ["git", "submodule", "update", "--init"]
   python:
     backend: python-build
     args:
@@ -98,6 +106,7 @@ docs:
 clean:
   paths:
     - build
+    - build-foga
     - dist
     - .pytest_cache
     - doc/build
