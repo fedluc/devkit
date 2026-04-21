@@ -100,7 +100,7 @@ output.
 
 `build` defines up to two workflow kinds:
 
-- `build.cpp` for C++ build tooling with `cmake` or `meson`
+- `build.cpp` for C++ build tooling
 - `build.python` for Python package builds
 
 `build.default` may be `cpp`, `python`, or `all`.

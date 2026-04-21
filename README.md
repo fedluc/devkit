@@ -65,7 +65,7 @@ foga deploy --target pypi --dry-run
 Python lint targets can use `ruff-check` or `pylint`, and C++ lint targets can
 use `clang-tidy`.
 
-`build.cpp` supports both `cmake` and `meson` backends for native builds, while
+`build.cpp` supports both `cmake` and `meson` backends for C++ builds, while
 `build.python` uses `python-build` for packaging workflows.
 
 ## Documentation
