@@ -134,7 +134,6 @@ class MesonBuildConfig:
 
     Attributes:
         backend: C++ build backend identifier.
-        command: Meson command used for setup and compile steps.
         source_dir: Source directory passed to ``meson setup``.
         build_dir: Build directory passed to ``meson setup`` and reused for
             ``meson compile``.
@@ -149,7 +148,6 @@ class MesonBuildConfig:
     backend: str
     source_dir: str
     build_dir: str
-    command: list[str] = field(default_factory=lambda: ["meson"])
     launcher: list[str] = field(default_factory=list)
     setup_args: list[str] = field(default_factory=list)
     compile_args: list[str] = field(default_factory=list)

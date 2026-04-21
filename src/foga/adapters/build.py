@@ -126,14 +126,14 @@ def _meson_plan(config: MesonBuildConfig, request: BuildRequest) -> list[Command
         Command specs for the setup step and one or more compile steps.
     """
     setup_command = [
-        *config.command,
+        "meson",
         "setup",
         config.build_dir,
         config.source_dir,
         *config.setup_args,
     ]
     compile_command = [
-        *config.command,
+        "meson",
         "compile",
         "-C",
         config.build_dir,
