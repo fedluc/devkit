@@ -16,7 +16,8 @@ EXAMPLE_CONFIGS = [
     ROOT / "examples/tutorial/02-pybind11-hello/foga.yml",
     ROOT / "examples/tutorial/03-pybind11-tests/foga.yml",
     ROOT / "examples/tutorial/04-pybind11-profiles/foga.yml",
-    ROOT / "examples/qupled/foga.yml",
+    ROOT / "examples/arrow/foga.yml",
+    ROOT / "examples/numpy/foga.yml",
     ROOT / "examples/pybind11/foga.yml",
 ]
 
