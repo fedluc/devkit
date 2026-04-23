@@ -1,11 +1,15 @@
-# Profiles And Hooks
+# Profiles and Hooks
+
+Profiles and hooks adapt a base `foga.yml` without turning it into a
+collection of one-off scripts. Profiles handle environment-specific
+configuration. Hooks add small commands around generated backend commands.
 
 ## Profiles
 
 Profiles let one repository express environment-specific differences without
 copying the entire config. Apply them with `--profile <name>`.
 
-Example:
+Minimal example:
 
 ```yaml
 profiles:
@@ -20,7 +24,7 @@ profiles:
           USE_MPI: "ON"
 ```
 
-Use profiles for:
+Typical uses:
 
 - CI versus local development
 - MPI versus non-MPI builds
@@ -39,7 +43,7 @@ Profile merge rules are intentionally conservative:
 Hooks are the supported escape hatch when a workflow needs a small amount of
 custom orchestration around a built-in backend command.
 
-Hook shape:
+Minimal example:
 
 ```yaml
 test:

@@ -1,25 +1,39 @@
 # Examples
 
-The repository organizes examples into guided tutorials and larger real-world
-reference configurations.
+The example set has two distinct jobs:
 
-## Start here
+- the tutorial track teaches `foga` incrementally, starting from the smallest
+  useful config and adding one concept at a time
+- the real-world examples show `foga` working against larger or more realistic
+  repositories, including upstream checkouts and mixed Python/C++ workflows
 
-- [Tutorial examples](tutorials.md): guided examples that start small and add
-  one idea at a time while you learn `foga`
+## Choose an example path
 
-## Real-world examples
+Start with the [tutorial examples](tutorials.md) when you are learning the
+configuration model and want a sequence you can read in order.
 
-- [arrow](arrow.md): Apache Arrow in Docker with system dependencies, native
-  builds, Python installs, pytest, and Sphinx docs
-- [qupled](qupled.md): C++ CMake build, Python packaging, pytest suites,
-  a `ctest` C++ test runner, and MPI-related profiles
-- [pybind11](pybind11.md): pinned containerized example that provisions an
-  upstream repository in Docker and runs `foga` against it
+Jump to the real-world examples when you already understand the basics and want
+to see how `foga` maps onto a more complete repository shape.
 
-Use the tutorial set when you are learning `foga` for the first time. Use the
-real-world examples when you want denser reference material for an existing
-repository.
+## Tutorial track
+
+- [Tutorial examples](tutorials.md): the guided path through incremental
+  adoption, from a pure Python project to mixed Python/C++ builds, testing, and
+  profiles
+
+## Real-world references
+
+- [arrow](arrow.md): Apache Arrow in Docker with system dependencies, a native
+  CMake build, Python installs, pytest, and Sphinx docs. Use this when you want
+  the heaviest upstream demonstration.
+- [numpy](numpy.md): NumPy in Docker with a separate Meson native build, Python
+  packaging, pytest, and docs. Use this when you want to see the native build
+  and Python packaging workflows kept distinct.
+- [qupled](qupled.md): a full repository already using `foga` across its
+  workflows. Use this when you want a live early-adopter reference.
+- [pybind11](pybind11.md): a pinned upstream checkout in Docker with native
+  builds, tests, and docs. Use this when you want a realistic upstream example
+  without the weight of Arrow.
 
 ```{toctree}
 :maxdepth: 1
@@ -27,6 +41,7 @@ repository.
 
 tutorials
 arrow
+numpy
 qupled
 pybind11
 ```
