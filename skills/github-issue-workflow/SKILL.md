@@ -23,7 +23,7 @@ Use this skill when work should start from the GitHub backlog rather than from a
 - Never do issue work directly on `main`.
 - Create one branch per issue.
 - Start that branch from the latest remote `main` (`origin/main`) unless the user explicitly asks to work from a different base.
-- Use a branch name that includes the issue number and a short slug.
+- Use a branch name that includes the issue number and a short slug if available.
 - Keep the PR scoped to the selected issue.
 - Include a concise PR summary, the verification run, and a closing reference such as `Closes #<issue>`.
 - Use the repository's configured bot account for commits, pushes, pull requests, and PR comments unless the user explicitly asks otherwise.
@@ -31,6 +31,7 @@ Use this skill when work should start from the GitHub backlog rather than from a
 
 ## Issue Selection Policy
 
+- If a user specifies an issue number or title, use that issue. Report if the issue is not open or cannot be found, and stop.
 - Default to the newest open issue, not the oldest.
 - If labels or milestones make it clear that a different issue should take priority, mention that conflict before proceeding.
 - If the newest issue is blocked, say why and move to the next viable open issue.

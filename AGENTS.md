@@ -30,9 +30,6 @@ This repository relies on shared skills. Use them.
   opened pull request.
   This is the source of truth for branching, issue pickup, and PR flow.
 
-* `pr-review-loop`
-  Use when implementing or coordinating GitHub PR review feedback.
-
 If a task matches a skill, follow the skill unless given an explicit override.
 
 ## Engineering Principles
