@@ -1,82 +1,118 @@
 ---
 name: python-development
-description: Implement, refactor, review, and maintain modern Python projects with consistent repository standards. Use when Codex is editing Python source, tests, packaging metadata, or developer tooling and needs project-specific guidance for code structure, type hints, linting, formatting, and verification. Especially useful for tasks involving `pyproject.toml`, `src/`, `tests/`, CLI code, packaging, or changes that must satisfy `ruff`, `pytest`, and build validation.
+description: Implement, refactor, review, and maintain Python code in this repository. Use when editing Python source, tests, packaging metadata, CLI/config behavior, documentation tooling, or project workflow files that must be verified with uv, Ruff, pytest, Sphinx, or build checks.
 ---
 
 # Python Development
 
-Use this skill to keep Python changes small, typed, testable, and easy to verify.
+Use this skill for Python work in `foga`. Keep changes small, typed,
+testable, and consistent with the existing `src/foga/` and `tests/` layout.
 
-## Workflow
+This skill is the operational checklist for agents. Its commands intentionally
+mirror `docs/development.md`; when the development workflow changes, update both
+places in the same patch.
 
-* Use the workflow described at `docs/development.md`. 
-* If any tools necessary to follow the workflow are missing notify the user.
-* Inspect the existing module, tests, and `pyproject.toml` before changing behavior.
-* Match the repository's current structure instead of introducing new abstractions by default.
-* Prefer small pure functions, explicit data flow, and standard-library solutions unless the repo already depends on something heavier.
-* Add or update tests in the same change when behavior changes.
-* Run formatting, linting, and relevant tests before finishing.
-* Review any touched Python docstrings before finishing and keep them in valid Google style.
+## Working Rules
 
-## Coding Standards
+- Inspect the relevant source, tests, and `pyproject.toml` before editing
+  behavior, packaging, or tooling.
+- Prefer the repository's existing patterns and module boundaries over new
+  abstractions.
+- Write the minimum code that solves the request. Add configurability,
+  indirection, or helper modules only when the current change needs them.
+- Preserve existing CLI and config behavior unless the task explicitly changes
+  it.
+- Use standard-library solutions unless the repository already depends on a
+  better fit.
+- Add or update tests in the same change when behavior changes.
+- Update README, docs, or examples when user-visible CLI, config, packaging, or
+  workflow behavior changes.
+- If a required tool or verification command is unavailable, state what failed
+  and why.
 
-* Target Python 3.10+ features already used by the repo.
+## uv Workflow
 
-### Type-hints
+Set up or refresh the environment with the development and documentation extras:
 
-* Add type hints for public functions and for internal functions.
-* Prefer `pathlib.Path`, `dataclass`, and straightforward collections over stringly-typed or deeply nested state.
+```bash
+uv sync --extra dev --extra docs
+```
 
-### Docstrings
+When dependency metadata changes, refresh the committed lockfile:
 
-* When Python docstrings are added or touched, keep them in valid Google style. 
-* Do not leave touched public functions, helpers, or dataclasses with placeholder one-line docstrings when parameters, return values, exceptions, or fields need explanation.
+```bash
+uv lock
+```
 
-### Code structure
+While iterating, run targeted checks first when a narrower command covers the
+change, then run the repository checks that apply:
 
-* Keep diffs consistent with surrounding code and existing module boundaries instead of introducing new multi-purpose modules.
-* Raise precise exceptions with actionable messages.
-* Keep functions focused. Split only when it improves readability or testability.
-* Avoid thin wrapper helpers that only forward to another function or registry lookup.
-* When multiple workflow sections share the same shape, prefer one shared parser or selection helper over copy-pasted loops.
-* Avoid premature frameworks, dependency injection layers, or generic utility modules unless the codebase already uses them.
-* Prefer `__future__.annotations` in Python modules when surrounding files use it.
+```bash
+uv run ruff format .
+uv run ruff check .
+uv run pytest
+```
 
-### Comments
+Use narrower pytest paths during iteration, for example:
 
-* Keep comments sparse. Add them only when behavior is non-obvious.
+```bash
+uv run pytest tests/test_cli.py
+```
 
-## Testing and Validation
+When documentation changes, build docs with warnings treated as errors:
 
-* The testing workflow is documented in `docs/development.md` under "Run checks while developing". Use it. 
-* Run targeted tests first when a narrow test file covers the change.
-* Run `pytest` for any behavior change, bug fix, or CLI/config update.
-* If CLI or config behavior changes, add or update CLI-facing and config-facing tests in the same change.
-* If a command cannot be run, state that clearly and explain why.
+```bash
+uv run sphinx-build -W --keep-going -b html docs docs/_build/html
+```
 
-### Testing Policy
+Before release-oriented changes, build the distributions:
 
-* Add tests for new behavior and regressions.
-* Prefer assertions on observable behavior, not implementation details.
-* Keep fixtures local to the test module unless they are broadly reused.
-* For CLI behavior, test exit codes and user-visible output.
-* For config parsing, test both valid and invalid inputs.
+```bash
+uv run python -m build
+```
 
-## Ruff Policy
+## Python Standards
 
-* Ruff usage is documented in `docs/development.md` under "Run checks while developing". Use it. 
-* Fix lint violations in touched files rather than suppressing them by default.
-* Add ignores only when the repository has a documented reason and the alternative is clearly worse.
+- Target the Python version declared in `pyproject.toml`.
+- Add type hints for public functions and non-trivial internal helpers.
+- Prefer `pathlib.Path`, dataclasses, and explicit typed containers over
+  stringly typed state.
+- Use concrete built-in generics such as `list[str]` and `dict[str, str]`.
+- Keep functions focused. Split code only when it improves readability or
+  testability.
+- Raise precise exceptions with actionable messages at filesystem, subprocess,
+  CLI, and config boundaries.
+- Keep comments sparse. Add them only for behavior that is not obvious from the
+  code.
+- Use `from __future__ import annotations` when surrounding modules do.
 
-## Packaging and Project Layout
+## Docstrings
 
-* Keep application code under `src/` and tests under `tests/` when the repo already follows that layout.
-* Keep tool configuration in `pyproject.toml`.
-* Prefer PEP 621 metadata in `pyproject.toml`.
-* Update the documentation if the development dependencies change 
-* `foga` expects a root-level `foga.yml`.
-* When configuration or adapter behavior changes, update `README.md` and relevant documentation.
+- Keep added or touched Python docstrings in valid Google style.
+- Do not add placeholder docstrings. Explain parameters, returns, exceptions, or
+  fields when that information is not obvious.
+- Review touched public functions, helpers, and dataclasses before finishing.
 
-## References
+## Tests
 
-* Read [references/python-standards.md](references/python-standards.md) for the detailed checklist and code-review heuristics used by this skill.
+- Prefer tests that assert observable behavior instead of implementation
+  details.
+- Keep fixtures local to the test module unless they are broadly reused.
+- For CLI changes, test exit codes and user-visible output.
+- For config parsing, test both valid and invalid inputs.
+- Add regression coverage for bug fixes before or alongside the fix.
+
+## Ruff
+
+- Use Ruff as the formatting and linting tool.
+- Fix lint violations in touched code rather than suppressing them by default.
+- Add ignores only when the repository already has a reason or the alternative
+  is clearly worse.
+
+## Packaging and Layout
+
+- Keep application code under `src/foga/` and tests under `tests/`.
+- Keep project and tool configuration in `pyproject.toml`.
+- Prefer PEP 621 metadata in `pyproject.toml`.
+- Keep the committed `uv.lock` in sync with dependency metadata.
+- `foga` expects a root-level `foga.yml` for project configuration.
