@@ -5,15 +5,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Linux-documented%20%7C%20CI-2ea44f" alt="Linux documented and exercised in CI">
   <img src="https://img.shields.io/badge/macOS-documented-2ea44f" alt="macOS documented">
-  <a href="https://github.com/fedluc/foga/actions/workflows/ci.yml">
-    <img src="https://github.com/fedluc/foga/actions/workflows/ci.yml/badge.svg" alt="CI">
-  </a>
-  <a href="https://github.com/fedluc/foga/actions/workflows/docs.yml">
-    <img src="https://github.com/fedluc/foga/actions/workflows/docs.yml/badge.svg" alt="Docs">
-  </a>
-  <a href="https://pypi.org/project/foga/">
-    <img src="https://img.shields.io/pypi/v/foga" alt="PyPI version">
-  </a>
+  <a href="https://github.com/fedluc/foga/actions/workflows/ci.yml"><img src="https://github.com/fedluc/foga/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/fedluc/foga/actions/workflows/docs.yml"><img src="https://github.com/fedluc/foga/actions/workflows/docs.yml/badge.svg" alt="Docs"></a>
+  <a href="https://pypi.org/project/foga/"><img src="https://img.shields.io/pypi/v/foga" alt="PyPI version"></a>
 </p>
 
 `foga` is a Python package and CLI for developers maintaining Python packages
